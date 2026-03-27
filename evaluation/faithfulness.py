@@ -85,16 +85,13 @@ class FaithfulnessEvaluator:
             if layer_idx not in self._state:
                 self._state[layer_idx] = {"sen_sum": 0.0, "saco_sum": 0.0, "n": 0}
 
-            # TODO: iterate batch
-            # for i in range(hmap.shape[0]):
-            #     sen  = self._sensitivity_n(hmap[i], images[i], captions[i],
-            #                               base_confidences[i])
-            #     saco = self._saco(hmap[i], images[i], captions[i],
-            #                       base_confidences[i])
-            #     self._state[layer_idx]["sen_sum"]  += sen
-            #     self._state[layer_idx]["saco_sum"] += saco
-            #     self._state[layer_idx]["n"]        += 1
-            raise NotImplementedError
+            for i in range(hmap.shape[0]):
+                base_conf_i = base_confidences[i].item()
+                sen = self._sensitivity_n(hmap[i], images[i], captions[i], base_conf_i)
+                saco = self._saco(hmap[i], images[i], captions[i], base_conf_i)
+                self._state[layer_idx]["sen_sum"] += sen
+                self._state[layer_idx]["saco_sum"] += saco
+                self._state[layer_idx]["n"] += 1
 
     def compute(self) -> List[LayerFaithfulnessResult]:
         """
@@ -139,12 +136,18 @@ class FaithfulnessEvaluator:
         -------
         confidence_drop (float) — higher is better for faithfulness
         """
-        # TODO:
-        # 1. Flatten heatmap, find top-n pixel indices
-        # 2. Build binary mask, apply to image (set to 0 or mean pixel)
-        # 3. Re-score masked image with self.model.forward
-        # 4. return base_confidence - masked_confidence
-        raise NotImplementedError
+        H, W = heatmap.shape
+        n_pixels = H * W
+        k = max(1, int(n_pixels * self.config.sensitivity_n / 100))
+
+        _, top_indices = heatmap.flatten().topk(k)
+        masked_img = self._apply_mask(image, top_indices)
+
+        with torch.no_grad():
+            output = self.model.forward(masked_img.unsqueeze(0), [caption])
+            masked_conf = self._extract_confidence(output)
+
+        return base_confidence - masked_conf
 
     def _saco(
         self,
@@ -162,14 +165,32 @@ class FaithfulnessEvaluator:
         -------
         AUC (float) — higher means faster / steeper confidence decay
         """
-        # TODO:
-        # 1. Sort pixels by heatmap intensity (descending)
-        # 2. For each step k in range(saco_steps):
-        #      mask top (k/saco_steps)% pixels
-        #      score = model.forward(masked_image, caption)
-        #      confidences.append(base_confidence - score)
-        # 3. Compute trapezoidal AUC over confidences list
-        raise NotImplementedError
+        H, W = heatmap.shape
+        n_pixels = H * W
+        sorted_indices = heatmap.flatten().argsort(descending=True)
+
+        steps = self.config.saco_steps
+        confidence_drops: List[float] = []
+        x_vals: List[float] = []
+
+        for k in range(1, steps + 1):
+            n_mask = max(1, int(n_pixels * k / steps))
+            top_indices = sorted_indices[:n_mask]
+            masked_img = self._apply_mask(image, top_indices)
+
+            with torch.no_grad():
+                output = self.model.forward(masked_img.unsqueeze(0), [caption])
+                score = self._extract_confidence(output)
+
+            confidence_drops.append(base_confidence - score)
+            x_vals.append(k / steps)
+
+        # Trapezoidal AUC over the confidence-drop curve
+        auc = torch.trapezoid(
+            torch.tensor(confidence_drops, dtype=torch.float32),
+            torch.tensor(x_vals, dtype=torch.float32),
+        ).item()
+        return auc
 
     @staticmethod
     def _apply_mask(
@@ -190,5 +211,24 @@ class FaithfulnessEvaluator:
         -------
         masked image (C, H, W) — original not modified
         """
-        # TODO: implement without in-place ops so autograd isn't broken
-        raise NotImplementedError
+        C, H, W = image.shape
+        # Build a boolean spatial mask, then use torch.where (no in-place ops)
+        spatial_mask = torch.zeros(H * W, dtype=torch.bool, device=image.device)
+        spatial_mask[flat_indices] = True
+        spatial_mask = spatial_mask.view(H, W).unsqueeze(0).expand(C, -1, -1)  # (C, H, W)
+
+        fill = torch.full_like(image, fill_value)
+        return torch.where(spatial_mask, fill, image)
+
+    def _extract_confidence(self, output: Dict) -> float:
+        """
+        Extract a scalar confidence score from model output.
+
+        For BLIP ITM the logits are (B, 2); we take softmax and return the
+        positive-class probability for the first (and only) sample.
+        Falls back to sigmoid for single-logit outputs.
+        """
+        logits = output["logits"]
+        if logits.dim() >= 2 and logits.shape[-1] == 2:
+            return torch.softmax(logits, dim=-1)[0, 1].item()
+        return torch.sigmoid(logits.flatten()[0]).item()

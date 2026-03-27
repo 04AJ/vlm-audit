@@ -1,0 +1,19 @@
+[build-system]
+requires      = ["setuptools>=68"]
+build-backend = "setuptools.backends.legacy:build"
+
+[project]
+name        = "vlm-audit"
+version     = "0.1.0"
+description = "Diagnostic toolkit for auditing cross-attention faithfulness in Vision-Language Models"
+requires-python = ">=3.10"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["core*", "extraction*", "evaluation*", "data*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100

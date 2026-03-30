@@ -13,7 +13,7 @@ from typing import List, Optional
 class AuditConfig:
     # --- Model ---
     model_name: str = "Salesforce/blip-itm-base-coco"
-    device: str = "cuda"                    # "cuda" | "cpu"
+    device: str = "cpu"                    # "cuda" | "cpu"
 
     # --- Which layers to audit ---
     # Indices into the cross-attention stack (0-based).

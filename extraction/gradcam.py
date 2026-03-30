@@ -76,15 +76,21 @@ class GradCAMExtractor:
         -------
         Dict[layer_idx -> Tensor (B, H_img, W_img)]  values in [0, 1]
         """
-        # TODO:
-        # 1. self._register_grad_hooks()
-        # 2. output = self.model.forward(images, captions)
-        # 3. target_score = _select_target_score(output)
-        # 4. target_score.backward()
-        # 5. heatmaps = {l: self._compute_layer(l) for l in target_layers}
-        # 6. self._remove_grad_hooks(); self._clear_caches()
-        # 7. return heatmaps
-        raise NotImplementedError
+        self._register_grad_hooks()
+        try:
+            output = self.model.forward(images, captions)
+            target_score = self._select_target_score(output)
+            target_score.backward()
+
+            target = self.config.target_layers or list(self._activation_cache.keys())
+            heatmaps = {l: self._compute_layer(l) for l in target
+                        if l in self._activation_cache}
+        finally:
+            # Always clean up even if an exception is raised
+            self._remove_grad_hooks()
+            self._clear_caches()
+
+        return heatmaps
 
     # ------------------------------------------------------------------
     # Hook management
@@ -95,21 +101,25 @@ class GradCAMExtractor:
         Register forward hooks (to cache activations) and backward hooks
         (to cache gradients) on each target cross-attention layer.
         """
-        # TODO: iterate self.model._cross_attention_layers
-        raise NotImplementedError
+        target = set(self.config.target_layers) if self.config.target_layers else None
+
+        for idx, layer in enumerate(self.model._cross_attention_layers):
+            if target is not None and idx not in target:
+                continue
+            h1 = layer.register_forward_hook(self._forward_hook(idx))
+            h2 = layer.register_full_backward_hook(self._backward_hook(idx))
+            self._grad_hooks.extend([h1, h2])
 
     def _forward_hook(self, layer_idx: int):
         """Caches the forward activation for `layer_idx`."""
         def hook(module, input, output):
-            # TODO: store output (attention weights) in self._activation_cache
-            pass
+            self._activation_cache[layer_idx] = output
         return hook
 
     def _backward_hook(self, layer_idx: int):
         """Caches the gradient w.r.t. activation for `layer_idx`."""
         def hook(module, grad_input, grad_output):
-            # TODO: store grad_output[0] in self._gradient_cache
-            pass
+            self._gradient_cache[layer_idx] = grad_output[0]
         return hook
 
     def _remove_grad_hooks(self) -> None:
@@ -132,8 +142,7 @@ class GradCAMExtractor:
 
         Returns scalar Tensor with grad_fn attached.
         """
-        # TODO: return model_output["logits"].mean()
-        raise NotImplementedError
+        return model_output["logits"].mean()
 
     def _compute_layer(self, layer_idx: int) -> torch.Tensor:
         """
@@ -141,12 +150,34 @@ class GradCAMExtractor:
 
         Returns Tensor (B, H_img, W_img) in [0, 1].
         """
-        # A  = self._activation_cache[layer_idx]   # (B, heads, T, N)
-        # dA = self._gradient_cache[layer_idx]      # (B, heads, T, N)
-        # TODO:
-        #   alpha  = dA.mean(dim=(-2, -1))           # (B, heads)
-        #   L      = (alpha[:, :, None, None] * A).sum(dim=1)  # (B, T, N)
-        #   L      = L.mean(dim=1)                   # (B, N)  avg over tokens
-        #   if self.config.gradcam_relu: L = L.clamp(min=0)
-        #   reshape → upsample → normalise
-        raise NotImplementedError
+        A  = self._activation_cache[layer_idx]   # (B, heads, T, N)
+        dA = self._gradient_cache[layer_idx]     # (B, heads, T, N)
+
+        # Importance weight per head — average gradient over all token/patch positions
+        alpha = dA.mean(dim=(-2, -1))                        # (B, heads)
+
+        # Weighted sum of activations across heads
+        L = (alpha[:, :, None, None] * A).sum(dim=1)        # (B, T, N)
+
+        # Collapse text-token dimension
+        L = L.mean(dim=1)                                    # (B, N)
+
+        # Keep only positive contributions (patches that help the score)
+        if self.config.gradcam_relu:
+            L = L.clamp(min=0)
+
+        # Reshape flat patches → spatial grid → full image resolution → [0, 1]
+        B, N      = L.shape
+        patch_grid = self.model.patch_grid                   # (ph, pw)
+        L = L.view(B, *patch_grid)                           # (B, ph, pw)
+        L = L.unsqueeze(1)                                   # (B, 1, ph, pw)
+        L = torch.nn.functional.interpolate(
+            L, size=self.image_size, mode="bilinear", align_corners=False
+        )
+        L = L.squeeze(1)                                     # (B, H, W)
+
+        # Per-sample min-max normalisation
+        flat  = L.view(B, -1)
+        min_  = flat.min(dim=1).values.view(B, 1, 1)
+        max_  = flat.max(dim=1).values.view(B, 1, 1)
+        return (L - min_) / (max_ - min_ + 1e-8)

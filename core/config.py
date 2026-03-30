@@ -13,7 +13,7 @@ from typing import List, Optional
 class AuditConfig:
     # --- Model ---
     model_name: str = "Salesforce/blip-itm-base-coco"
-    device: str = "cuda"                    # "cuda" | "cpu"
+    device: str = "cpu"                    # "cuda" | "cpu"
 
     # --- Which layers to audit ---
     # Indices into the cross-attention stack (0-based).
@@ -24,6 +24,9 @@ class AuditConfig:
     dataset_name: str = "nlphuji/flickr30k"
     dataset_split: str = "test"
     max_samples: Optional[int] = None       # None = use full split
+    annotations_dir: Optional[str] = None  # path to Flickr30k Entities XML folder
+    sentences_dir: Optional[str] = None   # path to Flickr30k Entities sentences folder
+    split_file: Optional[str] = None       # path to txt file of image IDs for the split
 
     # --- Extraction ---
     attention_head_fusion: str = "mean"     # "mean" | "max" | "min"

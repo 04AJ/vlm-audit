@@ -89,40 +89,49 @@ class AttentionExtractor:
         Strategy from self.config.attention_head_fusion:
           "mean" | "max" | "min"
         """
-        # TODO: implement
-        raise NotImplementedError
+        if self.config.attention_head_fusion == "mean":
+            return torch.mean(weights, dim=1)
+        elif self.config.attention_head_fusion == "max":
+            return torch.max(weights, dim=1).values
+        elif self.config.attention_head_fusion == "min":
+            return torch.min(weights, dim=1).values
+        else:
+            raise ValueError(f"Unknown head fusion: {self.config.attention_head_fusion}")
 
     def _fuse_tokens(self, weights: torch.Tensor) -> torch.Tensor:
         """
         Reduce text-token dimension by averaging.
         weights : (B, T, N)  →  returns (B, N)
         """
-        # TODO: implement
-        raise NotImplementedError
+        return torch.mean(weights, dim=1)
 
     def _reshape_to_grid(self, weights: torch.Tensor) -> torch.Tensor:
         """
         Reshape flat patch sequence to spatial grid.
         weights : (B, N)  →  returns (B, ph, pw)
         """
-        # TODO: B, N = weights.shape; return weights.view(B, *self.patch_grid)
-        raise NotImplementedError
+        B, N = weights.shape
+        return weights.view(B, *self.patch_grid)
 
     def _upsample(self, grid: torch.Tensor) -> torch.Tensor:
         """
         Bilinear upsample patch grid to full image resolution.
         grid : (B, ph, pw)  →  returns (B, H_img, W_img)
         """
-        # TODO: F.interpolate expects (B, C, H, W); add/remove channel dim
-        raise NotImplementedError
+        grid = grid.unsqueeze(dim=1)
+        up_sample = F.interpolate(grid, self.image_size, mode="bilinear", align_corners=False)
+        return up_sample.squeeze(dim=1)
 
     def _normalise(self, heatmap: torch.Tensor) -> torch.Tensor:
         """
         Per-sample min-max normalisation → values in [0, 1].
         heatmap : (B, H, W)  →  returns (B, H, W)
         """
-        # TODO: implement, avoid division by zero
-        raise NotImplementedError
+        B = heatmap.shape[0]
+        flat = heatmap.view(B, -1)                 # (B, H*W)
+        min_ = flat.min(dim=1).values.view(B, 1, 1)
+        max_ = flat.max(dim=1).values.view(B, 1, 1)
+        return (heatmap - min_) / (max_ - min_ + 1e-8)   # +1e-8 avoids div by zero
 
     def _process_layer(self, weights: torch.Tensor) -> torch.Tensor:
         """Compose the full per-layer pipeline."""

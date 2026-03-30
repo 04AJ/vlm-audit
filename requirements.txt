@@ -4,7 +4,7 @@ torchvision>=0.17.0
 transformers>=4.40.0     # BLIP, processor, AutoModel
 
 # HuggingFace data
-datasets>=2.19.0         # load_dataset("nlphuji/flickr30k")
+datasets>=2.19.0,<3.0.0  # load_dataset("nlphuji/flickr30k") — script-based, needs <3.0
 Pillow>=10.0.0           # image I/O
 
 # Evaluation utilities

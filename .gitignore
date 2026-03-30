@@ -16,7 +16,6 @@ env/
 
 # HuggingFace cache
 .cache/
-~/.cache/huggingface/
 
 # Dataset downloads
 data/downloads/
@@ -58,3 +57,6 @@ htmlcov/
 
 # Ruff / linting
 .ruff_cache/
+
+data/Annotations/
+data/Sentences

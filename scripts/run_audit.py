@@ -62,7 +62,6 @@ def main() -> None:
     # ------------------------------------------------------------------ #
     print(f"[core] Loading {config.model_name} on {config.device} ...")
     model = VLMAuditModel(config)
-    # TODO: model._load_model(); model._register_hooks()
 
     # ------------------------------------------------------------------ #
     # 2. Data — build DataLoader                                          #
@@ -75,13 +74,13 @@ def main() -> None:
     # ------------------------------------------------------------------ #
     attn_extractor = AttentionExtractor(
         config=config,
-        patch_grid=model.patch_grid,    # TODO: implement patch_grid property
-        image_size=(384, 384),          # TODO: derive from config/processor
+        patch_grid=model.patch_grid,
+        image_size=model.image_size,
     )
     grad_extractor = GradCAMExtractor(
         model=model,
         config=config,
-        image_size=(384, 384),
+        image_size=model.image_size,
     )
 
     # ------------------------------------------------------------------ #

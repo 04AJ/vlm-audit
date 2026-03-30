@@ -59,4 +59,4 @@ htmlcov/
 .ruff_cache/
 
 data/Annotations/
-data/Sentences
+data/Sentences/

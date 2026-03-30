@@ -10,6 +10,7 @@ Run from repo root with venv active:
     python -m extraction.visualise_maps
 """
 
+import os
 import torch
 import numpy as np
 import matplotlib.pyplot as plt
@@ -27,9 +28,11 @@ N_IMAGES    = 3
 LAYER       = 11          # which cross-attention layer to visualise
 ALPHA       = 0.5         # heatmap overlay transparency
 
-ANNOTATIONS_DIR = r"C:\vlm-audit\data\Annotations"
-SENTENCES_DIR   = r"C:\vlm-audit\data\Sentences"
-SPLIT_FILE      = r"C:\vlm-audit\data\test.txt"
+# Paths are resolved relative to the repo root (two levels up from this file)
+_REPO_ROOT      = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+ANNOTATIONS_DIR = os.path.join(_REPO_ROOT, "data", "Annotations")
+SENTENCES_DIR   = os.path.join(_REPO_ROOT, "data", "Sentences")
+SPLIT_FILE      = os.path.join(_REPO_ROOT, "data", "test.txt")
 
 # ------------------------------------------------------------------ helpers --
 
@@ -43,7 +46,7 @@ def to_numpy_image(tensor: torch.Tensor) -> np.ndarray:
 def overlay_heatmap(ax, image_np: np.ndarray, heatmap: torch.Tensor, title: str):
     """Draw image with heatmap overlaid in hot colourmap."""
     ax.imshow(image_np)
-    ax.imshow(heatmap.cpu().numpy(), cmap="hot", alpha=ALPHA,
+    ax.imshow(heatmap.detach().cpu().numpy(), cmap="hot", alpha=ALPHA,
               vmin=0, vmax=1, extent=[0, image_np.shape[1], image_np.shape[0], 0])
     ax.set_title(title, fontsize=8)
     ax.axis("off")

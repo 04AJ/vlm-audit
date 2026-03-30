@@ -110,7 +110,10 @@ class AttentionExtractor:
         Reshape flat patch sequence to spatial grid.
         weights : (B, N)  →  returns (B, ph, pw)
         """
+        # BLIP's ViT prepends a [CLS] token at position 0 — drop it before reshaping
+        # to leave only the 576 spatial patch tokens (24×24)
         B, N = weights.shape
+        weights = weights[:, 1:]
         return weights.view(B, *self.patch_grid)
 
     def _upsample(self, grid: torch.Tensor) -> torch.Tensor:

@@ -18,10 +18,9 @@ Algorithm per layer:
 
 from __future__ import annotations
 
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Tuple
 
 import torch
-import torch.nn as nn
 
 from core.config import AuditConfig
 from core.model import VLMAuditModel
@@ -98,28 +97,31 @@ class GradCAMExtractor:
 
     def _register_grad_hooks(self) -> None:
         """
-        Register forward hooks (to cache activations) and backward hooks
-        (to cache gradients) on each target cross-attention layer.
+        Register a forward hook on each target cross-attention layer.
+        The hook extracts the 4-D attention tensor, enables retain_grad() on it
+        so that .backward() populates its .grad field, and stores it in
+        _activation_cache.  No backward hook is needed.
         """
         target = set(self.config.target_layers) if self.config.target_layers else None
 
         for idx, layer in enumerate(self.model._cross_attention_layers):
             if target is not None and idx not in target:
                 continue
-            h1 = layer.register_forward_hook(self._forward_hook(idx))
-            h2 = layer.register_full_backward_hook(self._backward_hook(idx))
-            self._grad_hooks.extend([h1, h2])
+            h = layer.register_forward_hook(self._forward_hook(idx))
+            self._grad_hooks.append(h)
 
     def _forward_hook(self, layer_idx: int):
-        """Caches the forward activation for `layer_idx`."""
-        def hook(module, input, output):
-            self._activation_cache[layer_idx] = output
-        return hook
-
-    def _backward_hook(self, layer_idx: int):
-        """Caches the gradient w.r.t. activation for `layer_idx`."""
-        def hook(module, grad_input, grad_output):
-            self._gradient_cache[layer_idx] = grad_output[0]
+        """
+        Extracts the 4-D attention tensor from the layer output, calls
+        retain_grad() so gradients accumulate into .grad during backward,
+        then stores it in _activation_cache.
+        """
+        def hook(*args):
+            output = args[2]   # (module, input, output)
+            attn = self.model._extract_attention_tensor(output)
+            if attn is not None:
+                attn.retain_grad()
+                self._activation_cache[layer_idx] = attn
         return hook
 
     def _remove_grad_hooks(self) -> None:
@@ -150,8 +152,8 @@ class GradCAMExtractor:
 
         Returns Tensor (B, H_img, W_img) in [0, 1].
         """
-        A  = self._activation_cache[layer_idx]   # (B, heads, T, N)
-        dA = self._gradient_cache[layer_idx]     # (B, heads, T, N)
+        A  = self._activation_cache[layer_idx]        # (B, heads, T, N)
+        dA = self._activation_cache[layer_idx].grad  # (B, heads, T, N) — set by .backward()
 
         # Importance weight per head — average gradient over all token/patch positions
         alpha = dA.mean(dim=(-2, -1))                        # (B, heads)
@@ -167,7 +169,9 @@ class GradCAMExtractor:
             L = L.clamp(min=0)
 
         # Reshape flat patches → spatial grid → full image resolution → [0, 1]
-        B, N      = L.shape
+        # Drop [CLS] token at position 0 — not a spatial patch
+        L = L[:, 1:]
+        B, _       = L.shape
         patch_grid = self.model.patch_grid                   # (ph, pw)
         L = L.view(B, *patch_grid)                           # (B, ph, pw)
         L = L.unsqueeze(1)                                   # (B, 1, ph, pw)

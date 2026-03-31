@@ -155,15 +155,47 @@ This loads 3 images from the test split, checks captions and bounding boxes, and
 
 ## Usage
 
-```bash
-python scripts/run_audit.py
-```
+### 1. Activate the virtual environment
 
 ```bash
-python scripts/run_audit.py \
+# Git Bash / bash
+source .venv/Scripts/activate
+
+# PowerShell
+.venv\Scripts\Activate.ps1
+
+# Command Prompt
+.venv\Scripts\activate.bat
+```
+
+### 2. Run the audit
+
+**CPU — quick test** (limited samples and SaCo steps to keep it fast):
+
+```bash
+python -m scripts.run_audit --max-samples 10 --layers 6 --saco-steps 3
+```
+
+**GPU — full run:**
+
+```bash
+python -m scripts.run_audit --gpu --layers 9 10 11 --max-samples 500
+```
+
+Results are saved to `results/results_<timestamp>.json`.
+
+### All flags
+
+```bash
+python -m scripts.run_audit \
   --model Salesforce/blip-itm-base-coco \
-  --layers 6 7 8 \
+  --gpu \
+  --layers 9 10 11 \
   --max-samples 500 \
+  --batch-size 8 \
+  --iou-threshold 0.5 \
+  --sensitivity-n 10 \
+  --saco-steps 20 \
   --output-dir results/run_01
 ```
 

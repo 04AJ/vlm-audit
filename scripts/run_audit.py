@@ -14,9 +14,13 @@ Usage
 """
 
 import argparse
+import dataclasses
 import json
 import os
+from datetime import datetime
 from pathlib import Path
+
+import torch
 
 from core.config import AuditConfig
 from core.model import VLMAuditModel
@@ -31,7 +35,7 @@ from evaluation.results import EvalResults
 def parse_args() -> AuditConfig:
     parser = argparse.ArgumentParser(description="VLM-Audit pipeline")
     parser.add_argument("--model",       default="Salesforce/blip-itm-base-coco")
-    parser.add_argument("--device",      default="cuda")
+    parser.add_argument("--gpu",          action="store_true", default=False)
     parser.add_argument("--layers",      nargs="*", type=int, default=[])
     parser.add_argument("--max-samples", type=int,  default=None)
     parser.add_argument("--batch-size",  type=int,  default=8)
@@ -43,7 +47,7 @@ def parse_args() -> AuditConfig:
 
     return AuditConfig(
         model_name=args.model,
-        device=args.device,
+        device="cuda" if args.gpu else "cpu",
         target_layers=args.layers,
         max_samples=args.max_samples,
         iou_threshold=args.iou_threshold,
@@ -86,8 +90,10 @@ def main() -> None:
     # ------------------------------------------------------------------ #
     # 4. Evaluation — initialise evaluators                               #
     # ------------------------------------------------------------------ #
-    grounding_eval    = GroundingEvaluator(config)
-    faithfulness_eval = FaithfulnessEvaluator(model, config)
+    grounding_eval      = GroundingEvaluator(config)
+    faithfulness_eval   = FaithfulnessEvaluator(model, config)
+    grounding_eval_grad = GroundingEvaluator(config)
+    faithfulness_eval_grad = FaithfulnessEvaluator(model, config)
 
     # ------------------------------------------------------------------ #
     # 5. Main loop                                                        #
@@ -100,7 +106,11 @@ def main() -> None:
 
         # --- Forward pass (populates attention cache) ---
         output = model.forward(images, captions)
-        base_conf = output["logits"]   # TODO: extract per-sample confidence
+        logits = output["logits"]
+        if logits.dim() >= 2 and logits.shape[-1] == 2:
+            base_conf = torch.softmax(logits, dim=-1)[:, 1]
+        else:
+            base_conf = torch.sigmoid(logits.view(logits.shape[0], -1)[:, 0])
 
         # --- Extract heatmaps ---
         attn_cache = model.get_attention_cache()
@@ -108,8 +118,10 @@ def main() -> None:
         grad_heatmaps = grad_extractor.compute(images, captions)
 
         # --- Accumulate scores (run both heatmap types) ---
-        grounding_eval.update(attn_heatmaps, boxes, image_sizes=None)   # TODO: pass sizes
+        grounding_eval.update(attn_heatmaps, boxes, image_sizes=batch["image_size"])
         faithfulness_eval.update(attn_heatmaps, images, captions, base_conf)
+        grounding_eval_grad.update(grad_heatmaps, boxes, image_sizes=batch["image_size"])
+        faithfulness_eval_grad.update(grad_heatmaps, images, captions, base_conf)
 
         model.clear_cache()
 
@@ -122,13 +134,17 @@ def main() -> None:
     results = EvalResults(
         grounding=grounding_eval.compute(),
         faithfulness=faithfulness_eval.compute(),
+        grounding_grad=grounding_eval_grad.compute(),
+        faithfulness_grad=faithfulness_eval_grad.compute(),
         config_snapshot=vars(config),
     )
 
     print("\n" + results.summary())
 
-    out_path = Path(config.output_dir) / "results.json"
-    # TODO: serialise EvalResults to JSON
+    run_id = datetime.now().strftime("%Y%m%d_%H%M%S")
+    out_path = Path(config.output_dir) / f"results_{run_id}.json"
+    with open(out_path, "w") as f:
+        json.dump(dataclasses.asdict(results), f, indent=2)
     print(f"[audit] Results saved to {out_path}")
 
 

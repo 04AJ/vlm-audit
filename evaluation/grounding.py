@@ -21,6 +21,7 @@ from __future__ import annotations
 from typing import Dict, List, Tuple
 
 import torch
+import torch.nn.functional as F
 
 from core.config import AuditConfig
 from evaluation.results import LayerGroundingResult
@@ -120,6 +121,14 @@ class GroundingEvaluator:
         (pointing_game_correct: int, iou: float)
         """
         h, w = image_size
+
+        # Resize heatmap to original image resolution so it aligns with GT boxes
+        heatmap = F.interpolate(
+            heatmap.unsqueeze(0).unsqueeze(0).float(),
+            size=(h, w),
+            mode="bilinear",
+            align_corners=False,
+        ).squeeze()
 
         # Build GT mask as union of all entity boxes
         gt_mask = torch.zeros(h, w, dtype=torch.bool, device=heatmap.device)

@@ -24,8 +24,8 @@ class AuditConfig:
     dataset_name: str = "nlphuji/flickr30k"
     dataset_split: str = "test"
     max_samples: Optional[int] = None       # None = use full split
-    annotations_dir: Optional[str] = None  # path to Flickr30k Entities XML folder
-    sentences_dir: Optional[str] = None   # path to Flickr30k Entities sentences folder
+    annotations_dir: Optional[str] = "data/Annotations"
+    sentences_dir: Optional[str] = "data/Sentences"
     split_file: Optional[str] = None       # path to txt file of image IDs for the split
 
     # --- Extraction ---

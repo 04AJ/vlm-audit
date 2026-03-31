@@ -58,3 +58,6 @@ htmlcov/
 
 # Ruff / linting
 .ruff_cache/
+
+data/Annotations/
+data/Sentences/

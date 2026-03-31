@@ -73,9 +73,13 @@ Each module has a narrow, explicit interface so they can be developed independen
 
 ## Dataset
 
-[Flickr30k Entities](https://huggingface.co/datasets/nlphuji/flickr30k) is loaded automatically via HuggingFace `datasets`. It provides:
-- Images paired with 5 reference captions each
-- Bounding-box annotations per noun phrase — used by the Grounding evaluator
+[Flickr30k Entities](https://github.com/BryanPlummer/flickr30k_entities) — 31k images, each with 5 reference captions and bounding-box annotations per noun phrase.
+
+| Source | What it provides |
+|---|---|
+| HuggingFace `nlphuji/flickr30k` | Images (PIL) |
+| Local `data/Sentences/` | Captions with entity class tags |
+| Local `data/Annotations/` | Bounding boxes per entity (XML) |
 
 ## Evaluation Metrics
 
@@ -91,9 +95,63 @@ Both metrics are computed per layer, allowing identification of which transforme
 
 ## Setup
 
+### 1. Create and activate a virtual environment
+
+```bash
+# Create (run once)
+python -m venv .venv
+```
+
+Activate — pick the command for your terminal:
+
+```bash
+# Git Bash / bash
+source .venv/Scripts/activate
+
+# PowerShell
+.venv\Scripts\Activate.ps1
+
+# Command Prompt
+.venv\Scripts\activate.bat
+```
+
+You should see `(.venv)` in your prompt.
+
+### 2. Install dependencies
+
 ```bash
 pip install -r requirements.txt
 ```
+
+## Data
+
+The pipeline uses [Flickr30k Entities](https://github.com/BryanPlummer/flickr30k_entities) for bounding-box annotations and captions, and HuggingFace for images.
+
+### Setting up annotation files
+
+1. Download the annotations archive from the [flickr30k_entities releases](https://github.com/BryanPlummer/flickr30k_entities/tree/master) page
+2. Extract the zip
+3. Copy the `Annotations` and `Sentences` folders into `data/`:
+
+```
+vlm-audit/
+└── data/
+    ├── Annotations/       ← XML bounding-box files (one per image)
+    ├── Sentences/         ← Caption files with entity tags (one per image)
+    └── test.txt           ← List of test-split image IDs
+```
+
+> `Annotations/` and `Sentences/` are git-ignored and must be set up locally by each team member.
+
+### Testing the data loader
+
+With your venv active and annotation files in place, run:
+
+```bash
+python -m data.test_flickr
+```
+
+This loads 3 images from the test split, checks captions and bounding boxes, and opens a matplotlib window showing each image with ground-truth boxes labelled by object class (e.g. `people`, `clothing`, `vehicles`).
 
 ## Usage
 

@@ -45,7 +45,7 @@ class Flickr30kDataset(Dataset):
         self,
         config: AuditConfig,
         processor=None,
-        caption_idx: int = 0,
+        caption_idx: int = 4,
         transform: Optional[Callable] = None,
     ) -> None:
         self.config = config

@@ -4,15 +4,17 @@ Run from repo root with venv active:
     python -m data.test_flickr
 """
 
+import os
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 
 from core.config import AuditConfig
 from data.flickr30k import Flickr30kDataset, get_dataloader
 
-ANNOTATIONS_DIR = r"C:\vlm-audit\data\Annotations"
-SENTENCES_DIR   = r"C:\vlm-audit\data\Sentences"
-SPLIT_FILE      = r"C:\vlm-audit\data\test.txt"
+_REPO_ROOT      = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+ANNOTATIONS_DIR = os.path.join(_REPO_ROOT, "data", "Annotations")
+SENTENCES_DIR   = os.path.join(_REPO_ROOT, "data", "Sentences")
+SPLIT_FILE      = os.path.join(_REPO_ROOT, "data", "test.txt")
 
 
 def _make_cfg(n: int) -> AuditConfig:

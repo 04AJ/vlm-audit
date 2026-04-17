@@ -60,3 +60,5 @@ htmlcov/
 
 data/Annotations/
 data/Sentences
+
+logs/

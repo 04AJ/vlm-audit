@@ -18,6 +18,7 @@ export HF_HOME="$CACHE_DIR/huggingface"
 export PIP_CACHE_DIR="$CACHE_DIR/pip"
 export TORCH_HOME="$CACHE_DIR/torch"
 export MPLCONFIGDIR="$CACHE_DIR/matplotlib"
+# DATA_DIR already exported by config.sh
 
 module load Miniforge3/25.3.0-3
 

@@ -1,15 +1,8 @@
-# Core ML / VLM
-torch>=2.2.0
-torchvision>=0.17.0
-transformers>=4.40.0     # BLIP, processor, AutoModel
-
-# HuggingFace data
-datasets>=2.19.0,<3.0.0  # load_dataset("nlphuji/flickr30k") — script-based, needs <3.0
-Pillow>=10.0.0           # image I/O
-
-# Evaluation utilities
-numpy>=1.26.0
-scipy>=1.13.0            # trapezoidal AUC for SaCo
-
-# Optional — visualisation
-matplotlib>=3.8.0
+torch==2.11.0
+torchvision==0.26.0
+transformers==5.5.4
+datasets==4.8.4        
+Pillow==12.2.0        
+numpy==2.2.6
+scipy==1.15.3         
+matplotlib==3.10.8

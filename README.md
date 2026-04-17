@@ -51,8 +51,11 @@ vlm-audit/
 │   └── results.py          #   EvalResults dataclass
 │
 ├── scripts/
-│   └── run_audit.py        # Main entry point — wires all modules together
+│   ├── config.sh           # Centralised path configuration
+│   ├── conda_setup.sh      # Environment creation and package installation
+│   └── run_audit.sh        # SLURM job script for the audit pipeline
 │
+├── run_audit.py            # Main entry point — wires all modules together
 ├── requirements.txt
 └── pyproject.toml
 ```
@@ -95,7 +98,7 @@ Both metrics are computed per layer, allowing identification of which transforme
 
 ## Setup
 
-### 1. Create and activate a virtual environment
+### 1. Create and activate a virtual environment (outside cluster environment)
 
 ```bash
 # Create (run once)
@@ -117,10 +120,26 @@ source .venv/Scripts/activate
 
 You should see `(.venv)` in your prompt.
 
-### 2. Install dependencies
+### 2. Install dependencies (inside cluster environment)
 
 ```bash
-pip install -r requirements.txt
+module load Miniforge3/25.3.0-3
+conda activate /scratch/comp-646-g9/vlm_audit_env
+```
+
+The environment already exists at `/scratch/comp-646-g9/vlm_audit_env` — do not run `--create`.
+
+**Adding a new package:**
+
+1. Add the package name to `requirements.txt` without a version number, e.g. `opencv-python`
+2. Run the update job:
+```bash
+sbatch scripts/conda_setup.sh --update
+```
+3. Once installed, pin the exact version by running `pip show <package>` and updating the entry in `requirements.txt`, e.g.:
+```bash
+pip show opencv-python   # copy the Version field
+# then update requirements.txt: opencv-python>=4.9.0
 ```
 
 ## Data
@@ -155,47 +174,38 @@ This loads 3 images from the test split, checks captions and bounding boxes, and
 
 ## Usage
 
-### 1. Activate the virtual environment
+### Option 1 — SLURM batch job
+
+Submit the audit as a SLURM job (runs unattended on a compute node):
 
 ```bash
-# Git Bash / bash
-source .venv/Scripts/activate
-
-# PowerShell
-.venv\Scripts\Activate.ps1
-
-# Command Prompt
-.venv\Scripts\activate.bat
+sbatch scripts/run_audit.sh
 ```
 
-### 2. Run the audit
+Logs are written to `logs/audit_<JOBID>.log` and `logs/audit_<JOBID>.err`.
 
-**CPU — quick test** (limited samples and SaCo steps to keep it fast):
+### Option 2 — Interactive shell
+
+Request a GPU-enabled compute node and run the pipeline directly:
 
 ```bash
-python -m scripts.run_audit --max-samples 10 --layers 6 --saco-steps 3
+srun --pty --time=2:59:59 --gpus=1 --reservation=classroom --mem=64G $SHELL
 ```
 
-**GPU — full run:**
+Then activate the environment and run:
 
 ```bash
-python -m scripts.run_audit --gpu --layers 9 10 11 --max-samples 500
+module load Miniforge3/25.3.0-3
+conda activate /scratch/comp-646-g9/vlm_audit_env
+
+python run_audit.py
 ```
 
-Results are saved to `results/results_<timestamp>.json`.
-
-### All flags
-
 ```bash
-python -m scripts.run_audit \
+python run_audit.py \
   --model Salesforce/blip-itm-base-coco \
-  --gpu \
-  --layers 9 10 11 \
+  --layers 6 7 8 \
   --max-samples 500 \
-  --batch-size 8 \
-  --iou-threshold 0.5 \
-  --sensitivity-n 10 \
-  --saco-steps 20 \
   --output-dir results/run_01
 ```
 

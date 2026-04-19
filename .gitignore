@@ -28,14 +28,6 @@ data/cache/
 *.safetensors
 checkpoints/
 
-# Results / outputs
-results/
-*.json
-*.csv
-*.png
-*.jpg
-*.jpeg
-
 # Jupyter
 .ipynb_checkpoints/
 *.ipynb

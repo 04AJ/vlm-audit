@@ -50,6 +50,10 @@ htmlcov/
 # Ruff / linting
 .ruff_cache/
 
+# Experiments
+experimentation/
+test_flickr/
+
 data/Annotations/
 data/Sentences/
 logs/

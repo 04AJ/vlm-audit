@@ -2,13 +2,14 @@
 #SBATCH --job-name=audit
 #SBATCH --account=commons
 #SBATCH --partition=commons
+#SBATCH --reservation=classroom
 #SBATCH --ntasks=1 
 #SBATCH --output=logs/audit%j.log
 #SBATCH --error=logs/audit%j.err
 #SBATCH --threads-per-core=1
 #SBATCH --cpus-per-task=8
 #SBATCH --mem-per-cpu=4G
-#SBATCH --gres=gpu:lovelace:1
+#SBATCH --gres=gpu:volta:1
 #SBATCH --time=2:00:00
 
 
@@ -28,8 +29,4 @@ conda activate "$ENV_PATH"
 
 cd "$PROJECT_DIR"
 
-python run_audit.py \
-    --model Salesforce/blip-itm-base-coco \
-    --layers 6 7 8 \
-    --max-samples 500 \
-    --output-dir results/run_01
+python run_audit.py --gpu "$@"

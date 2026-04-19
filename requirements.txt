@@ -1,8 +1,10 @@
 torch==2.11.0
 torchvision==0.26.0
-transformers==5.5.4
-datasets==4.8.4        
-Pillow==12.2.0        
-numpy==2.2.6
-scipy==1.15.3         
+transformers==5.4.0
+datasets==2.21.0
+dill==0.3.8
+multiprocess==0.70.16
+Pillow==12.1.1
+numpy==2.4.4
+scipy==1.17.1
 matplotlib==3.10.8

@@ -36,8 +36,9 @@ LAYER       = 9    # cross-attention layer to visualise
 ALPHA       = 0.5  # heatmap overlay transparency
 
 _REPO_ROOT      = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-ANNOTATIONS_DIR = os.path.join(_REPO_ROOT, "data", "Annotations")
-SENTENCES_DIR   = os.path.join(_REPO_ROOT, "data", "Sentences")
+_SCRATCH_DATA   = os.environ.get("SCRATCH_DATA_DIR", "/scratch/comp-646-g9/data")
+ANNOTATIONS_DIR = os.path.join(_SCRATCH_DATA, "Annotations")
+SENTENCES_DIR   = os.path.join(_SCRATCH_DATA, "Sentences")
 SPLIT_FILE      = os.path.join(_REPO_ROOT, "data", "test.txt")
 
 # ------------------------------------------------------------------ helpers --

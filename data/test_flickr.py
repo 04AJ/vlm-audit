@@ -12,8 +12,9 @@ from core.config import AuditConfig
 from data.flickr30k import Flickr30kDataset, get_dataloader
 
 _REPO_ROOT      = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-ANNOTATIONS_DIR = os.path.join(_REPO_ROOT, "data", "Annotations")
-SENTENCES_DIR   = os.path.join(_REPO_ROOT, "data", "Sentences")
+_SCRATCH_DATA   = os.environ.get("SCRATCH_DATA_DIR", "/scratch/comp-646-g9/data")
+ANNOTATIONS_DIR = os.path.join(_SCRATCH_DATA, "Annotations")
+SENTENCES_DIR   = os.path.join(_SCRATCH_DATA, "Sentences")
 SPLIT_FILE      = os.path.join(_REPO_ROOT, "data", "test.txt")
 
 
@@ -112,13 +113,18 @@ def visualise(n: int = 3):
         wrapped = "\n".join(caption[i:i+60] for i in range(0, len(caption), 60))
         ax.set_title(wrapped, fontsize=8)
 
+    save_dir = os.path.join(_REPO_ROOT, "results", "test_flickr")
+    os.makedirs(save_dir, exist_ok=True)
+    save_path = os.path.join(save_dir, "visualise.pdf")
     plt.tight_layout()
-    plt.show()
+    fig.savefig(save_path, bbox_inches="tight", dpi=150)
+    print(f"[vis] Saved → {save_path}")
+    plt.close(fig)
 
 
 if __name__ == "__main__":
     test_dataset()
     test_dataloader()
     print("\nAll checks passed.")
-    print("\nOpening visualisation...")
+    print("\nSaving visualisation...")
     visualise(n=3)

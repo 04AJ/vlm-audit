@@ -1,0 +1,92 @@
+{
+  "grounding": [
+    {
+      "layer_idx": 9,
+      "pointing_game_accuracy": 0.314,
+      "mean_iou": 0.004493832524069746
+    },
+    {
+      "layer_idx": 10,
+      "pointing_game_accuracy": 0.314,
+      "mean_iou": 0.0046976286977892245
+    },
+    {
+      "layer_idx": 11,
+      "pointing_game_accuracy": 0.318,
+      "mean_iou": 0.004275663029467932
+    }
+  ],
+  "faithfulness": [
+    {
+      "layer_idx": 9,
+      "sensitivity_n_score": 0.08291131533277075,
+      "saco_auc": 0.5110540719863493
+    },
+    {
+      "layer_idx": 10,
+      "sensitivity_n_score": 0.07708275723076076,
+      "saco_auc": 0.49720900870417245
+    },
+    {
+      "layer_idx": 11,
+      "sensitivity_n_score": 0.057045575092168295,
+      "saco_auc": 0.48513167576270644
+    }
+  ],
+  "grounding_grad": [
+    {
+      "layer_idx": 9,
+      "pointing_game_accuracy": 0.426,
+      "mean_iou": 0.0026005966386783525
+    },
+    {
+      "layer_idx": 10,
+      "pointing_game_accuracy": 0.492,
+      "mean_iou": 0.009615688678449514
+    },
+    {
+      "layer_idx": 11,
+      "pointing_game_accuracy": 0.396,
+      "mean_iou": 0.0025643193247388394
+    }
+  ],
+  "faithfulness_grad": [
+    {
+      "layer_idx": 9,
+      "sensitivity_n_score": 0.021370182084006956,
+      "saco_auc": 0.23182010890636592
+    },
+    {
+      "layer_idx": 10,
+      "sensitivity_n_score": 0.03645130744259222,
+      "saco_auc": 0.3612144370628521
+    },
+    {
+      "layer_idx": 11,
+      "sensitivity_n_score": 0.040161479706992395,
+      "saco_auc": 0.3365748642701656
+    }
+  ],
+  "config_snapshot": {
+    "model_name": "Salesforce/blip-itm-base-coco",
+    "device": "cuda",
+    "target_layers": [
+      9,
+      10,
+      11
+    ],
+    "dataset_name": "nlphuji/flickr30k",
+    "dataset_split": "test",
+    "max_samples": 500,
+    "annotations_dir": "data/Annotations",
+    "sentences_dir": "data/Sentences",
+    "split_file": null,
+    "attention_head_fusion": "mean",
+    "gradcam_relu": true,
+    "iou_threshold": 0.5,
+    "sensitivity_n": 10,
+    "saco_steps": 20,
+    "output_dir": "results",
+    "save_heatmaps": true
+  }
+}

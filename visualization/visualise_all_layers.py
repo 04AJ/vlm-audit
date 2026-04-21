@@ -12,6 +12,7 @@ Run from repo root:
 import os
 import torch
 import matplotlib.pyplot as plt
+from matplotlib.backends.backend_pdf import PdfPages
 
 from core.config import AuditConfig
 from core.model import VLMAuditModel
@@ -41,7 +42,7 @@ def main():
 
     # Load model with all layers hooked (target_layers=[] means all)
     config = AuditConfig(
-        device="cpu",
+        device="cuda" if torch.cuda.is_available() else "cpu",
         max_samples=N_SEARCH,
         target_layers=[],
         annotations_dir=ANNOTATIONS_DIR,
@@ -77,37 +78,35 @@ def main():
 
         gradcam_heatmaps = gradcam_extractor.compute(images_batch, captions_batch)
 
-        for layer in range(n_layers):
-            if layer not in attn_heatmaps or layer not in gradcam_heatmaps:
-                print(f"[vis] Layer {layer} missing for image {idx + 1} — skipping.")
-                continue
+        save_path = os.path.join(SAVE_DIR, f"fig{idx:02d}_all_layers.pdf")
+        with PdfPages(save_path) as pdf:
+            for layer in range(n_layers):
+                if layer not in attn_heatmaps or layer not in gradcam_heatmaps:
+                    print(f"[vis] Layer {layer} missing for image {idx + 1} — skipping.")
+                    continue
 
-            attn_map    = attn_heatmaps[layer][0]
-            gradcam_map = gradcam_heatmaps[layer][0]
+                attn_map    = attn_heatmaps[layer][0]
+                gradcam_map = gradcam_heatmaps[layer][0]
 
-            col_titles = [
-                "Original + GT boxes",
-                f"Attention  (layer {layer})",
-                f"Grad-CAM  (layer {layer})",
-            ]
+                fig, axes = plt.subplots(1, 3, figsize=(14, 5))
+                fig.suptitle(f"Layer {layer} — {sample['filename']}", fontsize=11, fontweight="bold")
 
-            fig, axes = plt.subplots(1, 3, figsize=(14, 5))
-            for ax, title in zip(axes, col_titles):
-                ax.set_title(title, fontsize=10, fontweight="bold")
+                axes[0].set_title("Original + GT boxes", fontsize=10)
+                axes[1].set_title(f"Attention  (layer {layer})", fontsize=10)
+                axes[2].set_title(f"Grad-CAM  (layer {layer})", fontsize=10)
 
-            draw_boxes(axes[0], image_np, boxes, caption,
-                       original_size=sample["image_size"])
-            overlay_heatmap(axes[1], image_np, attn_map,
-                            f"Attention — {sample['filename']}")
-            overlay_heatmap(axes[2], image_np, gradcam_map,
-                            f"Grad-CAM — {sample['filename']}")
+                draw_boxes(axes[0], image_np, boxes, caption,
+                           original_size=sample["image_size"])
+                overlay_heatmap(axes[1], image_np, attn_map,
+                                f"Attention — {sample['filename']}")
+                overlay_heatmap(axes[2], image_np, gradcam_map,
+                                f"Grad-CAM — {sample['filename']}")
 
-            plt.tight_layout()
-            save_path = os.path.join(SAVE_DIR,
-                                     f"layer_{layer:02d}_fig{idx:02d}_overview.pdf")
-            fig.savefig(save_path, bbox_inches="tight", dpi=150)
-            print(f"[vis] Saved → {save_path}")
-            plt.close(fig)
+                plt.tight_layout()
+                pdf.savefig(fig, bbox_inches="tight", dpi=150)
+                plt.close(fig)
+
+        print(f"[vis] Saved → {save_path}")
 
     print(f"[vis] Done. All figures saved to {SAVE_DIR}/")
 

@@ -18,10 +18,11 @@ Public interface:
   - GroundingEvaluator
   - FaithfulnessEvaluator
   - EvalResults
+  - HybridResult
 """
 
 from evaluation.grounding import GroundingEvaluator
 from evaluation.faithfulness import FaithfulnessEvaluator
-from evaluation.results import EvalResults
+from evaluation.results import EvalResults, HybridResult
 
-__all__ = ["GroundingEvaluator", "FaithfulnessEvaluator", "EvalResults"]
+__all__ = ["GroundingEvaluator", "FaithfulnessEvaluator", "EvalResults", "HybridResult"]

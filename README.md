@@ -102,14 +102,14 @@ Both metrics are computed per layer, allowing identification of which transforme
 
 ```bash
 # Create (run once)
-python -m venv .venv
+python3 -m venv .venv
 ```
 
 Activate — pick the command for your terminal:
 
 ```bash
-# Git Bash / bash
-source .venv/Scripts/activate
+# macOS / Linux (bash, zsh)
+source .venv/bin/activate
 
 # PowerShell
 .venv\Scripts\Activate.ps1
@@ -182,7 +182,7 @@ Submit the audit as a SLURM job (runs unattended on a compute node):
 sbatch scripts/run_audit.sh
 ```
 
-Logs are written to `logs/audit_<JOBID>.log` and `logs/audit_<JOBID>.err`.
+Logs are written to `logs/audit<JOBID>.log` and `logs/audit<JOBID>.err`.
 
 ### Option 2 — Interactive shell
 
@@ -209,3 +209,12 @@ python run_audit.py \
   --output-dir results/run_01
 ```
 
+Hybrid sweep across all 12 layers:
+
+```bash
+python run_audit.py \
+  --layers 0 1 2 3 4 5 6 7 8 9 10 11 \
+  --hybrid-alphas 0.25 0.5 0.75 \
+  --max-samples 500 \
+  --output-dir results/hybrid_all12
+```

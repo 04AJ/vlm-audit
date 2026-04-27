@@ -13,9 +13,11 @@ Produces (for Evaluation Suite):
 Public interface:
   - AttentionExtractor
   - GradCAMExtractor
+  - HybridExtractor
 """
 
 from extraction.attention import AttentionExtractor
 from extraction.gradcam import GradCAMExtractor
+from extraction.hybrid import HybridExtractor
 
-__all__ = ["AttentionExtractor", "GradCAMExtractor"]
+__all__ = ["AttentionExtractor", "GradCAMExtractor", "HybridExtractor"]

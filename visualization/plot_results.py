@@ -1,54 +1,112 @@
+import argparse
 import json
+from pathlib import Path
+
 import matplotlib.pyplot as plt
 import numpy as np
 
-RESULTS_PATH = "results/results_20260331_063826.json"
 
-with open(RESULTS_PATH) as f:
-    data = json.load(f)
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Plot VLM-Audit results JSON.")
+    parser.add_argument("results_path", help="Path to a results_*.json file.")
+    parser.add_argument(
+        "--output",
+        default="visualization/results_barplot.pdf",
+        help="Output PDF path for the generated figure.",
+    )
+    return parser.parse_args()
 
-layers = [e["layer_idx"] for e in data["grounding"]]
-x = np.arange(len(layers))
-width = 0.18
-labels = [f"Layer {l}" for l in layers]
 
-def get(section, key):
-    return [e[key] for e in data[section]]
+def load_methods(data: dict) -> tuple[list[int], list[tuple[str, dict]]]:
+    layers = [entry["layer_idx"] for entry in data["grounding"]]
+    methods: list[tuple[str, dict]] = [
+        (
+            "Attention",
+            {
+                "grounding": data["grounding"],
+                "faithfulness": data["faithfulness"],
+            },
+        ),
+        (
+            "Grad-CAM",
+            {
+                "grounding": data["grounding_grad"],
+                "faithfulness": data["faithfulness_grad"],
+            },
+        ),
+    ]
 
-fig, axes = plt.subplots(1, 2, figsize=(13, 5))
-fig.suptitle("VLM Audit — Attention vs GradCAM", fontsize=14, fontweight="bold")
+    for hybrid_entry in data.get("hybrid", []):
+        methods.append(
+            (
+                f"Hybrid α={hybrid_entry['alpha']:.2f}",
+                {
+                    "grounding": hybrid_entry["grounding"],
+                    "faithfulness": hybrid_entry["faithfulness"],
+                },
+            )
+        )
 
-# --- Grounding ---
-ax = axes[0]
-ax.bar(x - width*1.5, get("grounding", "pointing_game_accuracy"), width, label="Attn — Pointing Game Acc", color="#4C72B0")
-ax.bar(x - width*0.5, get("grounding_grad", "pointing_game_accuracy"), width, label="Grad — Pointing Game Acc", color="#4C72B0", alpha=0.5, hatch="//")
-ax.bar(x + width*0.5, get("grounding", "mean_iou"), width, label="Attn — Mean IoU", color="#DD8452")
-ax.bar(x + width*1.5, get("grounding_grad", "mean_iou"), width, label="Grad — Mean IoU", color="#DD8452", alpha=0.5, hatch="//")
+    return layers, methods
 
-ax.set_yscale("log")
-ax.set_title("Grounding")
-ax.set_xticks(x)
-ax.set_xticklabels(labels)
-ax.set_ylabel("Score (log scale)")
-ax.legend(fontsize=8)
-ax.grid(axis="y", linestyle="--", alpha=0.4)
 
-# --- Faithfulness ---
-ax = axes[1]
-ax.bar(x - width*1.5, get("faithfulness", "saco_auc"), width, label="Attn — SaCo AUC", color="#55A868")
-ax.bar(x - width*0.5, get("faithfulness_grad", "saco_auc"), width, label="Grad — SaCo AUC", color="#55A868", alpha=0.5, hatch="//")
-ax.bar(x + width*0.5, get("faithfulness", "sensitivity_n_score"), width, label="Attn — Sensitivity-N", color="#C44E52")
-ax.bar(x + width*1.5, get("faithfulness_grad", "sensitivity_n_score"), width, label="Grad — Sensitivity-N", color="#C44E52", alpha=0.5, hatch="//")
+def metric_values(entries: list[dict], key: str, layers: list[int]) -> list[float]:
+    by_layer = {entry["layer_idx"]: entry[key] for entry in entries}
+    return [by_layer[layer] for layer in layers]
 
-ax.set_yscale("log")
-ax.set_title("Faithfulness")
-ax.set_xticks(x)
-ax.set_xticklabels(labels)
-ax.set_ylabel("Score (log scale)")
-ax.legend(fontsize=8)
-ax.grid(axis="y", linestyle="--", alpha=0.4)
 
-plt.tight_layout()
-plt.savefig("visualization/results_barplot.pdf", bbox_inches="tight")
-print("Saved: visualization/results_barplot.pdf")
-plt.show()
+def main() -> None:
+    args = parse_args()
+    with open(args.results_path) as f:
+        data = json.load(f)
+
+    layers, methods = load_methods(data)
+    x = np.arange(len(layers))
+    width = 0.8 / max(len(methods), 1)
+    labels = [f"Layer {layer}" for layer in layers]
+
+    plots = [
+        ("Pointing Game Accuracy", "grounding", "pointing_game_accuracy"),
+        ("Mean IoU", "grounding", "mean_iou"),
+        ("Sensitivity-n", "faithfulness", "sensitivity_n_score"),
+        ("SaCo AUC", "faithfulness", "saco_auc"),
+    ]
+
+    fig, axes = plt.subplots(2, 2, figsize=(14, 9))
+    fig.suptitle("VLM-Audit Method Comparison", fontsize=15, fontweight="bold")
+    axes = axes.flatten()
+    cmap = plt.get_cmap("tab10")
+
+    for ax, (title, section, key) in zip(axes, plots):
+        for idx, (label, method) in enumerate(methods):
+            offset = (idx - (len(methods) - 1) / 2) * width
+            ax.bar(
+                x + offset,
+                metric_values(method[section], key, layers),
+                width,
+                label=label,
+                color=cmap(idx % 10),
+            )
+
+        ax.set_title(title)
+        ax.set_xticks(x)
+        ax.set_xticklabels(labels)
+        ax.grid(axis="y", linestyle="--", alpha=0.35)
+
+    axes[0].set_ylabel("Score")
+    axes[2].set_ylabel("Score")
+    axes[2].set_xlabel("Layer")
+    axes[3].set_xlabel("Layer")
+
+    handles, legend_labels = axes[0].get_legend_handles_labels()
+    fig.legend(handles, legend_labels, loc="upper center", ncol=min(len(methods), 3))
+
+    plt.tight_layout(rect=(0, 0, 1, 0.92))
+    output_path = Path(args.output)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(output_path, bbox_inches="tight")
+    print(f"Saved: {output_path}")
+
+
+if __name__ == "__main__":
+    main()

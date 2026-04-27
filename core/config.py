@@ -29,6 +29,7 @@ class AuditConfig:
     dataset_name: str = "nlphuji/flickr30k"
     dataset_split: str = "test"
     max_samples: Optional[int] = None       # None = use full split
+    batch_size: int = 8
     annotations_dir: Optional[str] = field(default_factory=lambda: os.path.join(_SCRATCH_DATA, "Annotations"))
     sentences_dir: Optional[str] = field(default_factory=lambda: os.path.join(_SCRATCH_DATA, "Sentences"))
     split_file: Optional[str] = field(default_factory=lambda: os.path.join(_REPO_ROOT, "data", "test.txt"))
@@ -36,6 +37,7 @@ class AuditConfig:
     # --- Extraction ---
     attention_head_fusion: str = "mean"     # "mean" | "max" | "min"
     gradcam_relu: bool = True
+    hybrid_alphas: List[float] = field(default_factory=list)  # attention weight in alpha*attn + (1-alpha)*grad
 
     # --- Evaluation ---
     iou_threshold: float = 0.5

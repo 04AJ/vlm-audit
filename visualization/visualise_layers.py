@@ -35,7 +35,7 @@ SAVE_DIR    = "results/experimentation"
 ALPHA       = 0.25
 
 _REPO_ROOT      = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-_SCRATCH_DATA   = os.environ["DATA_DIR"]  # resolved by core.config via config.sh
+_SCRATCH_DATA   = os.environ.get("DATA_DIR", os.path.join(_REPO_ROOT, "data"))
 ANNOTATIONS_DIR = os.path.join(_SCRATCH_DATA, "Annotations")
 SENTENCES_DIR   = os.path.join(_SCRATCH_DATA, "Sentences")
 SPLIT_FILE      = os.path.join(_REPO_ROOT, "data", "test.txt")

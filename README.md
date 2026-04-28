@@ -99,16 +99,9 @@ Choose the option that matches where you are running the code.
 
 Use a Python virtual environment when running on your own laptop or desktop.
 
-**Step 1 — update `scripts/config.sh`** so `SCRATCH_DIR` points to your repo root. `DATA_DIR` is derived as `$SCRATCH_DIR/data`, which is where your `Annotations/` and `Sentences/` folders should live:
+No path configuration needed — scripts default to `data/` inside the repo, which is where your `Annotations/` and `Sentences/` folders should live.
 
-```bash
-PROJECT_DIR="/path/to/vlm-audit"   # absolute path to your cloned repo
-SCRATCH_DIR="$PROJECT_DIR"         # DATA_DIR will resolve to $PROJECT_DIR/data
-```
-
-The scripts read `config.sh` automatically — no need to source it manually.
-
-**Step 2 — create and activate the virtual environment:**
+**Create and activate the virtual environment:**
 
 ```bash
 # Create (run once)
@@ -148,9 +141,15 @@ PROJECT_DIR="$HOME/vlm-audit"        # path to your cloned repo
 SCRATCH_DIR="/scratch/comp-646-g9"   # scratch space for the env and data
 ```
 
-The scripts read `config.sh` automatically — no need to source it manually.
+**Step 2 — set `DATA_DIR`** so the scripts find the annotations in scratch rather than the repo:
 
-**Step 2 — submit the creation job:**
+```bash
+export DATA_DIR="$SCRATCH_DIR/data"
+```
+
+Or add it to your `~/.bashrc` to avoid setting it each session.
+
+**Step 3 — submit the creation job:**
 
 ```bash
 sbatch scripts/conda_setup.sh --create

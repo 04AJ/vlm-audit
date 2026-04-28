@@ -6,33 +6,11 @@ All three modules import this — add fields here rather than hard-coding values
 """
 
 import os
-import subprocess
 from dataclasses import dataclass, field
 from typing import List, Optional
 
-_REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-
-
-def _resolve_data_dir() -> str:
-    if "DATA_DIR" in os.environ:
-        return os.environ["DATA_DIR"]
-    config_sh = os.path.join(_REPO_ROOT, "scripts", "config.sh")
-    if os.path.exists(config_sh):
-        result = subprocess.run(
-            ["bash", "-c", f"source {config_sh} && echo $DATA_DIR"],
-            capture_output=True, text=True,
-        )
-        data_dir = result.stdout.strip()
-        if data_dir:
-            os.environ["DATA_DIR"] = data_dir
-            return data_dir
-    raise EnvironmentError(
-        "DATA_DIR is not set and scripts/config.sh could not be sourced. "
-        "Update SCRATCH_DIR in scripts/config.sh then run: source scripts/config.sh"
-    )
-
-
-_SCRATCH_DATA = _resolve_data_dir()
+_REPO_ROOT    = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+_SCRATCH_DATA = os.environ.get("DATA_DIR", os.path.join(_REPO_ROOT, "data"))
 
 
 @dataclass

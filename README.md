@@ -233,10 +233,10 @@ This loads 3 images from the test split, checks captions and bounding boxes, and
 
 ### Option 1 — Local machine
 
-With your venv active, run the pipeline on a single layer to verify everything works:
+With your venv active, run the pipeline on a single layer to verify everything works (~2–3 minutes on CPU):
 
 ```bash
-python run_audit.py --layers 6 --max-samples 50 --output-dir results/test_run
+python run_audit.py --layers 6 --max-samples 10 --saco-steps 3 --output-dir results/test_run
 ```
 
 ### Option 2 — NOTS cluster (SLURM batch job)
@@ -301,6 +301,7 @@ Generates a 3-row × 4-column figure showing real examples side-by-side: origina
 Run from the repo root with your environment active:
 
 ```bash
+export HF_HOME=/scratch/comp-646-g9/cache/huggingface # If running on NOTS
 python -m visualization.visualise_pipeline
 ```
 

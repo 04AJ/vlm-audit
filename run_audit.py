@@ -94,21 +94,15 @@ def main() -> None:
     config = parse_args()
     Path(config.output_dir).mkdir(parents=True, exist_ok=True)
 
-    # ------------------------------------------------------------------ #
-    # 1. Core Module — load model                                         #
-    # ------------------------------------------------------------------ #
+    # 1. Core Module — load model                                         
     print(f"[core] Loading {config.model_name} on {config.device} ...")
     model = VLMAuditModel(config)
 
-    # ------------------------------------------------------------------ #
-    # 2. Data — build DataLoader                                          #
-    # ------------------------------------------------------------------ #
+    # 2. Data — build DataLoader                                          
     print(f"[data] Loading Flickr30k ({config.dataset_split} split) ...")
     loader = get_dataloader(config, processor=model.processor, batch_size=config.batch_size, num_workers=0)
 
-    # ------------------------------------------------------------------ #
-    # 3. Extraction — initialise extractors                               #
-    # ------------------------------------------------------------------ #
+    # 3. Extraction — initialise extractors                               
     attn_extractor = AttentionExtractor(
         config=config,
         patch_grid=model.patch_grid,
@@ -121,9 +115,7 @@ def main() -> None:
     )
     hybrid_extractor = HybridExtractor()
 
-    # ------------------------------------------------------------------ #
-    # 4. Evaluation — initialise evaluators                               #
-    # ------------------------------------------------------------------ #
+    # 4. Evaluation — initialise evaluators                               
     if not config.hybrid_only:
         grounding_eval      = GroundingEvaluator(config)
         faithfulness_eval   = FaithfulnessEvaluator(model, config)
@@ -134,16 +126,14 @@ def main() -> None:
         alpha: FaithfulnessEvaluator(model, config) for alpha in config.hybrid_alphas
     }
 
-    # ------------------------------------------------------------------ #
-    # 5. Main loop                                                        #
-    # ------------------------------------------------------------------ #
+    # 5. Main loop                                                        
     print("[audit] Starting evaluation loop ...")
     for batch_idx, batch in enumerate(loader):
         images   = batch["image"]
         captions = batch["caption"]
         boxes    = batch["boxes"]
 
-        # --- Forward pass (populates attention cache) ---
+        # Forward pass (populates attention cache) 
         output = model.forward(images, captions)
         logits = output["logits"]
         if logits.dim() >= 2 and logits.shape[-1] == 2:
@@ -151,12 +141,12 @@ def main() -> None:
         else:
             base_conf = torch.sigmoid(logits.view(logits.shape[0], -1)[:, 0])
 
-        # --- Extract heatmaps ---
+        # Extract heatmaps 
         attn_cache = model.get_attention_cache()
         attn_heatmaps = attn_extractor.extract(attn_cache)
         grad_heatmaps = grad_extractor.compute(images, captions)
 
-        # --- Accumulate scores ---
+        # Accumulate scores
         if not config.hybrid_only:
             grounding_eval.update(attn_heatmaps, boxes, image_sizes=batch["image_size"])
             faithfulness_eval.update(attn_heatmaps, images, captions, base_conf)
@@ -176,9 +166,7 @@ def main() -> None:
         if (batch_idx + 1) % 10 == 0:
             print(f"  processed {(batch_idx + 1) * config.batch_size} samples ...")
 
-    # ------------------------------------------------------------------ #
-    # 6. Aggregate & save results                                         #
-    # ------------------------------------------------------------------ #
+    # 6. Aggregate & save results                                         
     results = EvalResults(
         grounding=grounding_eval.compute() if not config.hybrid_only else [],
         faithfulness=faithfulness_eval.compute() if not config.hybrid_only else [],

@@ -112,8 +112,8 @@ def plot_failure_comparison(
     n_rows = N_CASES * 2
     fig, axes = plt.subplots(
         n_rows, 4,
-        figsize=(11.5, 11),
-        gridspec_kw={"hspace": 0.02, "wspace": 0.02},
+        figsize=(16, 20),
+        gridspec_kw={"hspace": 0.15, "wspace": 0.02},
     )
 
     col_titles = [
@@ -135,7 +135,7 @@ def plot_failure_comparison(
         image_np = to_numpy_image(s["image_t"])
         colour   = row_colours[key]
 
-        draw_boxes(axes[row_idx][0], image_np, s["boxes"], "",
+        draw_boxes(axes[row_idx][0], image_np, s["boxes"], s["caption"],
                    original_size=s["image_size"])
         overlay_heatmap_annotated(axes[row_idx][1], image_np, s["attn_map"],
                                   s["boxes"], s["image_size"])

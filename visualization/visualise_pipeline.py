@@ -166,7 +166,7 @@ def plot_pipeline(
     fig, axes = plt.subplots(
         n_rows, 4,
         figsize=(17, 4.2 * n_rows),
-        gridspec_kw={"hspace": 0.05, "wspace": 0.03},
+        gridspec_kw={"hspace": 0.12, "wspace": 0.03},
     )
     if n_rows == 1:
         axes = [axes]

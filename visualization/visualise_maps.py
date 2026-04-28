@@ -134,7 +134,7 @@ def draw_boxes(ax, image_np: np.ndarray, boxes: list, caption: str,
         ax.text(x1, y1 - 3, label, fontsize=6, color=seen[label],
                 bbox=dict(facecolor="black", alpha=0.4, pad=1, edgecolor="none"))
     wrapped = "\n".join(caption[i:i+55] for i in range(0, len(caption), 55))
-    ax.set_title(wrapped, fontsize=7)
+    ax.set_title(wrapped, fontsize=12)
     ax.axis("off")
 
 

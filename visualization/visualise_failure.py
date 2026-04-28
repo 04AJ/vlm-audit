@@ -1,12 +1,12 @@
 """
 Failure comparison figure for the VLM-Audit paper.
 
-Figure 2: 6 rows × 3 cols — 3 correct cases then 3 failure cases.
+Figure 2: 6 rows × 4 cols — 3 correct cases then 3 failure cases.
   Correct: attention peak lands inside a GT box
   Failure: attention peak misses all GT boxes
-  Columns: original + GT boxes | attention | Grad-CAM
+  Columns: original + GT boxes | attention | Grad-CAM | Hybrid α=0.25
 
-Saved as a compact letter-size PDF suitable for direct inclusion in a report.
+Saved as a compact PDF suitable for direct inclusion in a report.
 
 Run from repo root:
     python -m visualization.visualise_failure
@@ -22,6 +22,7 @@ from core.model import VLMAuditModel
 from data.flickr30k import Flickr30kDataset
 from extraction.attention import AttentionExtractor
 from extraction.gradcam import GradCAMExtractor
+from extraction.hybrid import HybridExtractor
 from visualization.visualise_maps import (
     ANNOTATIONS_DIR, SENTENCES_DIR, SPLIT_FILE, LAYER,
     to_numpy_image, overlay_heatmap_annotated, draw_boxes,
@@ -32,6 +33,7 @@ from visualization.visualise_maps import (
 
 N_SEARCH     = 200
 N_CASES      = 3     # correct cases and failure cases each
+ALPHA        = 0.25
 
 # ------------------------------------------------------------------- figure --
 
@@ -40,6 +42,7 @@ def plot_failure_comparison(
     dataset: Flickr30kDataset,
     attn_extractor: AttentionExtractor,
     gradcam_extractor: GradCAMExtractor,
+    hybrid_extractor: HybridExtractor,
     layer: int = LAYER,
     save_path: str = None,
 ) -> None:
@@ -80,11 +83,14 @@ def plot_failure_comparison(
 
         attn_map     = attn_heatmaps[layer][0]
         grad_map     = gradcam_heatmaps[layer][0]
+        hybrid_map   = hybrid_extractor.blend(
+            attn_heatmaps, gradcam_heatmaps, ALPHA
+        )[layer][0]
         attn_correct = _peak_in_boxes(attn_map, boxes, img_size)
 
         entry = {
             "image_t": image_t, "caption": caption, "boxes": boxes,
-            "attn_map": attn_map, "grad_map": grad_map,
+            "attn_map": attn_map, "grad_map": grad_map, "hybrid_map": hybrid_map,
             "image_size": img_size,
         }
 
@@ -105,8 +111,8 @@ def plot_failure_comparison(
 
     n_rows = N_CASES * 2
     fig, axes = plt.subplots(
-        n_rows, 3,
-        figsize=(8.5, 11),
+        n_rows, 4,
+        figsize=(11.5, 11),
         gridspec_kw={"hspace": 0.02, "wspace": 0.02},
     )
 
@@ -114,6 +120,7 @@ def plot_failure_comparison(
         "Original + GT boxes",
         f"Attention  (layer {layer})",
         f"Grad-CAM  (layer {layer})",
+        f"Hybrid  α={ALPHA}  (layer {layer})",
     ]
     for ax, title in zip(axes[0], col_titles):
         ax.set_title(title, fontsize=8, fontweight="bold", pad=4)
@@ -133,6 +140,8 @@ def plot_failure_comparison(
         overlay_heatmap_annotated(axes[row_idx][1], image_np, s["attn_map"],
                                   s["boxes"], s["image_size"])
         overlay_heatmap_annotated(axes[row_idx][2], image_np, s["grad_map"],
+                                  s["boxes"], s["image_size"])
+        overlay_heatmap_annotated(axes[row_idx][3], image_np, s["hybrid_map"],
                                   s["boxes"], s["image_size"])
 
         axes[row_idx][0].set_ylabel(
@@ -175,10 +184,12 @@ def main():
     img_size          = config_image_size(model)
     attn_extractor    = AttentionExtractor(config, model.patch_grid, img_size)
     gradcam_extractor = GradCAMExtractor(model, config, img_size)
+    hybrid_extractor  = HybridExtractor()
 
     os.makedirs("results/failure", exist_ok=True)
     plot_failure_comparison(
-        model, dataset, attn_extractor, gradcam_extractor, layer=LAYER,
+        model, dataset, attn_extractor, gradcam_extractor, hybrid_extractor,
+        layer=LAYER,
         save_path="results/failure/fig2_failure_comparison.pdf",
     )
 

@@ -1,0 +1,272 @@
+{
+  "attention": {
+    "grounding": [
+      {
+        "layer_idx": 0,
+        "pointing_game_accuracy": 0.37,
+        "mean_iou": 0.005138106819133499
+      },
+      {
+        "layer_idx": 1,
+        "pointing_game_accuracy": 0.376,
+        "mean_iou": 0.004702797079325229
+      },
+      {
+        "layer_idx": 2,
+        "pointing_game_accuracy": 0.378,
+        "mean_iou": 0.004722254655299788
+      },
+      {
+        "layer_idx": 3,
+        "pointing_game_accuracy": 0.374,
+        "mean_iou": 0.005167031130888632
+      },
+      {
+        "layer_idx": 4,
+        "pointing_game_accuracy": 0.372,
+        "mean_iou": 0.005342708913167443
+      },
+      {
+        "layer_idx": 5,
+        "pointing_game_accuracy": 0.374,
+        "mean_iou": 0.005093887982973894
+      },
+      {
+        "layer_idx": 6,
+        "pointing_game_accuracy": 0.374,
+        "mean_iou": 0.005070342761904482
+      },
+      {
+        "layer_idx": 7,
+        "pointing_game_accuracy": 0.372,
+        "mean_iou": 0.005187583272903913
+      },
+      {
+        "layer_idx": 8,
+        "pointing_game_accuracy": 0.372,
+        "mean_iou": 0.005210760779779436
+      },
+      {
+        "layer_idx": 9,
+        "pointing_game_accuracy": 0.374,
+        "mean_iou": 0.0051804867373105145
+      },
+      {
+        "layer_idx": 10,
+        "pointing_game_accuracy": 0.374,
+        "mean_iou": 0.005039862819934073
+      },
+      {
+        "layer_idx": 11,
+        "pointing_game_accuracy": 0.374,
+        "mean_iou": 0.005085360209090066
+      }
+    ],
+    "faithfulness": [
+      {
+        "layer_idx": 0,
+        "sensitivity_n_score": 0.0763886474687606,
+        "saco_auc": 0.5577625535225962
+      },
+      {
+        "layer_idx": 1,
+        "sensitivity_n_score": 0.0693325301661098,
+        "saco_auc": 0.5655700294084381
+      },
+      {
+        "layer_idx": 2,
+        "sensitivity_n_score": 0.039066263332497325,
+        "saco_auc": 0.5461837676991709
+      },
+      {
+        "layer_idx": 3,
+        "sensitivity_n_score": 0.08239591204444878,
+        "saco_auc": 0.593175719465362
+      },
+      {
+        "layer_idx": 4,
+        "sensitivity_n_score": 0.07573608516040257,
+        "saco_auc": 0.5799622502799029
+      },
+      {
+        "layer_idx": 5,
+        "sensitivity_n_score": 0.06327152582630514,
+        "saco_auc": 0.560722793012159
+      },
+      {
+        "layer_idx": 6,
+        "sensitivity_n_score": 0.07510965571651468,
+        "saco_auc": 0.5714312249459327
+      },
+      {
+        "layer_idx": 7,
+        "sensitivity_n_score": 0.1171520829841611,
+        "saco_auc": 0.5997218370828777
+      },
+      {
+        "layer_idx": 8,
+        "sensitivity_n_score": 0.1021965434369631,
+        "saco_auc": 0.5821446934556589
+      },
+      {
+        "layer_idx": 9,
+        "sensitivity_n_score": 0.05449498563614907,
+        "saco_auc": 0.5587030288027599
+      },
+      {
+        "layer_idx": 10,
+        "sensitivity_n_score": 0.04547071983292699,
+        "saco_auc": 0.5492202457748353
+      },
+      {
+        "layer_idx": 11,
+        "sensitivity_n_score": 0.04293157118652016,
+        "saco_auc": 0.550808443241287
+      }
+    ]
+  },
+  "gradcam": {
+    "grounding": [
+      {
+        "layer_idx": 0,
+        "pointing_game_accuracy": 0.536,
+        "mean_iou": 0.0009913909043341264
+      },
+      {
+        "layer_idx": 1,
+        "pointing_game_accuracy": 0.544,
+        "mean_iou": 0.0016432572269195465
+      },
+      {
+        "layer_idx": 2,
+        "pointing_game_accuracy": 0.572,
+        "mean_iou": 0.0015857242479147247
+      },
+      {
+        "layer_idx": 3,
+        "pointing_game_accuracy": 0.612,
+        "mean_iou": 0.0017938917749892654
+      },
+      {
+        "layer_idx": 4,
+        "pointing_game_accuracy": 0.59,
+        "mean_iou": 0.001254634082815009
+      },
+      {
+        "layer_idx": 5,
+        "pointing_game_accuracy": 0.56,
+        "mean_iou": 0.0014387461035212875
+      },
+      {
+        "layer_idx": 6,
+        "pointing_game_accuracy": 0.57,
+        "mean_iou": 0.0006225667564435848
+      },
+      {
+        "layer_idx": 7,
+        "pointing_game_accuracy": 0.622,
+        "mean_iou": 0.0020471947896068565
+      },
+      {
+        "layer_idx": 8,
+        "pointing_game_accuracy": 0.572,
+        "mean_iou": 0.0023779593823284617
+      },
+      {
+        "layer_idx": 9,
+        "pointing_game_accuracy": 0.456,
+        "mean_iou": 0.002006848356198884
+      },
+      {
+        "layer_idx": 10,
+        "pointing_game_accuracy": 0.522,
+        "mean_iou": 0.008632786049690503
+      },
+      {
+        "layer_idx": 11,
+        "pointing_game_accuracy": 0.494,
+        "mean_iou": 0.002397340876962854
+      }
+    ],
+    "faithfulness": [
+      {
+        "layer_idx": 0,
+        "sensitivity_n_score": 0.07770906704239314,
+        "saco_auc": 0.41623531148443
+      },
+      {
+        "layer_idx": 1,
+        "sensitivity_n_score": 0.06805565718095749,
+        "saco_auc": 0.4477520725701761
+      },
+      {
+        "layer_idx": 2,
+        "sensitivity_n_score": 0.042126248465850946,
+        "saco_auc": 0.41456912573054433
+      },
+      {
+        "layer_idx": 3,
+        "sensitivity_n_score": 0.11567863436607877,
+        "saco_auc": 0.49090634708385916
+      },
+      {
+        "layer_idx": 4,
+        "sensitivity_n_score": 0.07766193002089858,
+        "saco_auc": 0.3973747876146808
+      },
+      {
+        "layer_idx": 5,
+        "sensitivity_n_score": 0.05905926062166691,
+        "saco_auc": 0.41731678835945785
+      },
+      {
+        "layer_idx": 6,
+        "sensitivity_n_score": 0.08046184321778128,
+        "saco_auc": 0.4060924072475173
+      },
+      {
+        "layer_idx": 7,
+        "sensitivity_n_score": 0.11062516163717373,
+        "saco_auc": 0.4689003570833884
+      },
+      {
+        "layer_idx": 8,
+        "sensitivity_n_score": 0.018336958516913,
+        "saco_auc": 0.36870853301952594
+      },
+      {
+        "layer_idx": 9,
+        "sensitivity_n_score": 0.016848051418928662,
+        "saco_auc": 0.27604943327885123
+      },
+      {
+        "layer_idx": 10,
+        "sensitivity_n_score": 0.03079172637593001,
+        "saco_auc": 0.44296957009239124
+      },
+      {
+        "layer_idx": 11,
+        "sensitivity_n_score": 0.041064035065006464,
+        "saco_auc": 0.37629948697797955
+      }
+    ]
+  },
+  "config": {
+    "model_name": "Salesforce/blip-itm-base-coco",
+    "device": "cuda",
+    "target_layers": [],
+    "dataset_name": "nlphuji/flickr30k",
+    "dataset_split": "test",
+    "max_samples": 500,
+    "annotations_dir": "/scratch/comp-646-g9/data/Annotations",
+    "sentences_dir": "/scratch/comp-646-g9/data/Sentences",
+    "split_file": "/scratch/rgx1/vlm-audit/data/test.txt",
+    "attention_head_fusion": "mean",
+    "gradcam_relu": true,
+    "iou_threshold": 0.5,
+    "sensitivity_n": 10,
+    "saco_steps": 20,
+    "output_dir": "results/all-layers",
+    "save_heatmaps": true
+  }
+}

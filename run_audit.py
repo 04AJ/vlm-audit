@@ -67,6 +67,12 @@ def parse_args() -> AuditConfig:
         help="Attention weights for hybrid heatmaps: hybrid = alpha*attention + (1-alpha)*gradcam",
     )
     parser.add_argument("--output-dir",  default="results")
+    parser.add_argument(
+        "--hybrid-only",
+        action="store_true",
+        default=False,
+        help="Skip standalone attention and Grad-CAM evaluation; only evaluate hybrid heatmaps.",
+    )
     args = parser.parse_args()
 
     return AuditConfig(
@@ -80,6 +86,7 @@ def parse_args() -> AuditConfig:
         sensitivity_n=args.sensitivity_n,
         saco_steps=args.saco_steps,
         output_dir=args.output_dir,
+        hybrid_only=args.hybrid_only,
     )
 
 
@@ -117,10 +124,11 @@ def main() -> None:
     # ------------------------------------------------------------------ #
     # 4. Evaluation — initialise evaluators                               #
     # ------------------------------------------------------------------ #
-    grounding_eval      = GroundingEvaluator(config)
-    faithfulness_eval   = FaithfulnessEvaluator(model, config)
-    grounding_eval_grad = GroundingEvaluator(config)
-    faithfulness_eval_grad = FaithfulnessEvaluator(model, config)
+    if not config.hybrid_only:
+        grounding_eval      = GroundingEvaluator(config)
+        faithfulness_eval   = FaithfulnessEvaluator(model, config)
+        grounding_eval_grad = GroundingEvaluator(config)
+        faithfulness_eval_grad = FaithfulnessEvaluator(model, config)
     grounding_eval_hybrid = {alpha: GroundingEvaluator(config) for alpha in config.hybrid_alphas}
     faithfulness_eval_hybrid = {
         alpha: FaithfulnessEvaluator(model, config) for alpha in config.hybrid_alphas
@@ -149,10 +157,11 @@ def main() -> None:
         grad_heatmaps = grad_extractor.compute(images, captions)
 
         # --- Accumulate scores ---
-        grounding_eval.update(attn_heatmaps, boxes, image_sizes=batch["image_size"])
-        faithfulness_eval.update(attn_heatmaps, images, captions, base_conf)
-        grounding_eval_grad.update(grad_heatmaps, boxes, image_sizes=batch["image_size"])
-        faithfulness_eval_grad.update(grad_heatmaps, images, captions, base_conf)
+        if not config.hybrid_only:
+            grounding_eval.update(attn_heatmaps, boxes, image_sizes=batch["image_size"])
+            faithfulness_eval.update(attn_heatmaps, images, captions, base_conf)
+            grounding_eval_grad.update(grad_heatmaps, boxes, image_sizes=batch["image_size"])
+            faithfulness_eval_grad.update(grad_heatmaps, images, captions, base_conf)
         for alpha in config.hybrid_alphas:
             hybrid_heatmaps = hybrid_extractor.blend(attn_heatmaps, grad_heatmaps, alpha)
             grounding_eval_hybrid[alpha].update(
@@ -171,10 +180,10 @@ def main() -> None:
     # 6. Aggregate & save results                                         #
     # ------------------------------------------------------------------ #
     results = EvalResults(
-        grounding=grounding_eval.compute(),
-        faithfulness=faithfulness_eval.compute(),
-        grounding_grad=grounding_eval_grad.compute(),
-        faithfulness_grad=faithfulness_eval_grad.compute(),
+        grounding=grounding_eval.compute() if not config.hybrid_only else [],
+        faithfulness=faithfulness_eval.compute() if not config.hybrid_only else [],
+        grounding_grad=grounding_eval_grad.compute() if not config.hybrid_only else [],
+        faithfulness_grad=faithfulness_eval_grad.compute() if not config.hybrid_only else [],
         hybrid=[
             HybridResult(
                 alpha=alpha,

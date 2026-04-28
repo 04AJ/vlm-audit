@@ -47,3 +47,4 @@ class AuditConfig:
     # --- Output ---
     output_dir: str = "results"
     save_heatmaps: bool = True
+    hybrid_only: bool = False

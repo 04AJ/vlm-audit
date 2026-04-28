@@ -1,7 +1,7 @@
 """
 Layer heatmap visualisation.
 
-Generates a 3-panel overview (original + GT boxes | attention | Grad-CAM)
+Generates a 4-panel overview (original + GT boxes | attention | Grad-CAM | Hybrid α=0.25)
 for N_IMAGES samples across selected layers, saving one PDF per image to
 results/experimentation/.
 
@@ -21,6 +21,7 @@ from core.model import VLMAuditModel
 from data.flickr30k import Flickr30kDataset
 from extraction.attention import AttentionExtractor
 from extraction.gradcam import GradCAMExtractor
+from extraction.hybrid import HybridExtractor
 from visualization.visualise_maps import (
     to_numpy_image,
     overlay_heatmap,
@@ -31,6 +32,7 @@ from visualization.visualise_maps import (
 N_IMAGES    = 3
 N_SEARCH    = 200
 SAVE_DIR    = "results/experimentation"
+ALPHA       = 0.25
 
 _REPO_ROOT      = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 _SCRATCH_DATA   = os.environ.get("SCRATCH_DATA_DIR", "/scratch/comp-646-g9/data")
@@ -66,6 +68,7 @@ def main():
     img_size          = config_image_size(model)
     attn_extractor    = AttentionExtractor(config, model.patch_grid, img_size)
     gradcam_extractor = GradCAMExtractor(model, config, img_size)
+    hybrid_extractor  = HybridExtractor()
 
     n_layers     = model.num_layers
     layers_to_show = args.layers if args.layers else list(range(n_layers))
@@ -99,13 +102,17 @@ def main():
 
                 attn_map    = attn_heatmaps[layer][0]
                 gradcam_map = gradcam_heatmaps[layer][0]
+                hybrid_map  = hybrid_extractor.blend(
+                    attn_heatmaps, gradcam_heatmaps, ALPHA
+                )[layer][0]
 
-                fig, axes = plt.subplots(1, 3, figsize=(14, 5))
+                fig, axes = plt.subplots(1, 4, figsize=(18, 5))
                 fig.suptitle(f"Layer {layer} — {sample['filename']}", fontsize=11, fontweight="bold")
 
                 axes[0].set_title("Original + GT boxes", fontsize=10)
                 axes[1].set_title(f"Attention  (layer {layer})", fontsize=10)
                 axes[2].set_title(f"Grad-CAM  (layer {layer})", fontsize=10)
+                axes[3].set_title(f"Hybrid  α={ALPHA}  (layer {layer})", fontsize=10)
 
                 draw_boxes(axes[0], image_np, boxes, caption,
                            original_size=sample["image_size"])
@@ -113,6 +120,8 @@ def main():
                                 f"Attention — {sample['filename']}")
                 overlay_heatmap(axes[2], image_np, gradcam_map,
                                 f"Grad-CAM — {sample['filename']}")
+                overlay_heatmap(axes[3], image_np, hybrid_map,
+                                f"Hybrid α={ALPHA} — {sample['filename']}")
 
                 plt.tight_layout()
                 pdf.savefig(fig, bbox_inches="tight", dpi=150)

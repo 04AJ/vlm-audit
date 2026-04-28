@@ -99,18 +99,14 @@ Choose the option that matches where you are running the code.
 
 Use a Python virtual environment when running on your own laptop or desktop.
 
-**Step 1 — update `scripts/config.sh`** so `SCRATCH_DIR` points to your local data folder. Since `Annotations/` and `Sentences/` live inside `data/`, set it to:
+**Step 1 — update `scripts/config.sh`** so `SCRATCH_DIR` points to your repo root. `DATA_DIR` is derived as `$SCRATCH_DIR/data`, which is where your `Annotations/` and `Sentences/` folders should live:
 
 ```bash
 PROJECT_DIR="/path/to/vlm-audit"   # absolute path to your cloned repo
-SCRATCH_DIR="$PROJECT_DIR/data"    # local data folder (contains Annotations/ and Sentences/)
+SCRATCH_DIR="$PROJECT_DIR"         # DATA_DIR will resolve to $PROJECT_DIR/data
 ```
 
-Then source it before running anything:
-
-```bash
-source scripts/config.sh
-```
+The scripts read `config.sh` automatically — no need to source it manually.
 
 **Step 2 — create and activate the virtual environment:**
 
@@ -151,6 +147,8 @@ pip install -r requirements.txt
 PROJECT_DIR="$HOME/vlm-audit"        # path to your cloned repo
 SCRATCH_DIR="/scratch/comp-646-g9"   # scratch space for the env and data
 ```
+
+The scripts read `config.sh` automatically — no need to source it manually.
 
 **Step 2 — submit the creation job:**
 
@@ -224,10 +222,9 @@ This only needs to be done once — the scratch location is shared across the te
 
 ### Testing the data loader
 
-With your environment active, source `config.sh` to export `DATA_DIR`, then run the test:
+With your environment active, run the test:
 
 ```bash
-source scripts/config.sh
 python -m data.test_flickr
 ```
 

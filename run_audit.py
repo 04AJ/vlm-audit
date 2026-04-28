@@ -97,7 +97,7 @@ def main() -> None:
     # 2. Data — build DataLoader                                          #
     # ------------------------------------------------------------------ #
     print(f"[data] Loading Flickr30k ({config.dataset_split} split) ...")
-    loader = get_dataloader(config, processor=model.processor, batch_size=config.batch_size)
+    loader = get_dataloader(config, processor=model.processor, batch_size=config.batch_size, num_workers=0)
 
     # ------------------------------------------------------------------ #
     # 3. Extraction — initialise extractors                               #
@@ -148,7 +148,7 @@ def main() -> None:
         attn_heatmaps = attn_extractor.extract(attn_cache)
         grad_heatmaps = grad_extractor.compute(images, captions)
 
-        # --- Accumulate scores (run both heatmap types) ---
+        # --- Accumulate scores ---
         grounding_eval.update(attn_heatmaps, boxes, image_sizes=batch["image_size"])
         faithfulness_eval.update(attn_heatmaps, images, captions, base_conf)
         grounding_eval_grad.update(grad_heatmaps, boxes, image_sizes=batch["image_size"])

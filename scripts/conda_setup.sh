@@ -54,6 +54,9 @@ fi
 
 conda activate "$ENV_PATH"
 
+echo "Installing PyTorch (cu121) ..."
+pip install "torch>=2.6" torchvision --index-url https://download.pytorch.org/whl/cu124
+
 echo "Installing requirements from requirements.txt..."
 REQ_PATH="$HOME/vlm-audit/requirements.txt"
 

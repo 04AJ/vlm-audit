@@ -29,8 +29,12 @@ data/cache/
 checkpoints/
 
 # Results / outputs
-results/
+results/*
+!results/all-layers/
+results/all-layers/*
+!results/all-layers/results.json
 *.json
+!results/all-layers/results.json
 *.csv
 *.png
 *.jpg

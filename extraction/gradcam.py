@@ -84,7 +84,7 @@ class GradCAMExtractor:
 
             target = self.config.target_layers or list(self._activation_cache.keys())
             heatmaps = {l: self._compute_layer(l) for l in target
-                        if l in self._activation_cache}
+                        if l in self._activation_cache and l in self._gradient_cache}
         finally:
             # Always clean up even if an exception is raised
             self._remove_grad_hooks()
@@ -98,28 +98,47 @@ class GradCAMExtractor:
 
     def _register_grad_hooks(self) -> None:
         """
-        Register forward hooks (to cache activations) and backward hooks
-        (to cache gradients) on each target cross-attention layer.
+        Register forward hooks on each target cross-attention layer.
+        Gradients are captured via tensor-level hooks registered inside
+        the forward hook, which correctly follows the computation graph
+        through attn_probs regardless of whether downstream layers use
+        the second output element.
         """
         target = set(self.config.target_layers) if self.config.target_layers else None
 
         for idx, layer in enumerate(self.model._cross_attention_layers):
             if target is not None and idx not in target:
                 continue
-            h1 = layer.register_forward_hook(self._forward_hook(idx))
-            h2 = layer.register_full_backward_hook(self._backward_hook(idx))
-            self._grad_hooks.extend([h1, h2])
+            h = layer.register_forward_hook(self._forward_hook(idx))
+            self._grad_hooks.append(h)
 
     def _forward_hook(self, layer_idx: int):
-        """Caches the forward activation for `layer_idx`."""
+        """
+        Caches attn_probs for `layer_idx` and registers a tensor gradient
+        hook on it so that dScore/d(attn_probs) is captured during backward.
+        """
         def hook(module, input, output):
-            self._activation_cache[layer_idx] = output
+            # BlipTextSelfAttention returns (context_layer, attn_probs)
+            # when output_attentions=True; skip otherwise.
+            if not (isinstance(output, tuple) and len(output) > 1):
+                return
+            # Register the hook on the full attn tensor (which IS in the computation
+            # graph via context_layer = attn_probs @ value_layer).  A slice of this
+            # tensor would be outside the graph and its hook would never fire.
+            attn_full = output[1]  # (B, heads, T, N_visual) — in the comp. graph
+            self._activation_cache[layer_idx] = attn_full[:, :, :, 1:]  # strip CLS
+            if attn_full.requires_grad:
+                attn_full.register_hook(
+                    lambda grad: self._gradient_cache.__setitem__(
+                        layer_idx, grad[:, :, :, 1:]  # strip CLS from gradient too
+                    )
+                )
         return hook
 
     def _backward_hook(self, layer_idx: int):
-        """Caches the gradient w.r.t. activation for `layer_idx`."""
+        """Unused — kept for reference."""
         def hook(module, grad_input, grad_output):
-            self._gradient_cache[layer_idx] = grad_output[0]
+            pass
         return hook
 
     def _remove_grad_hooks(self) -> None:

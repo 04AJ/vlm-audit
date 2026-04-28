@@ -121,6 +121,15 @@ class GroundingEvaluator:
         """
         h, w = image_size
 
+        # Resize heatmap from model space (e.g. 384×384) to original image space
+        # so that both pred_mask and gt_mask are in the same coordinate frame.
+        heatmap = torch.nn.functional.interpolate(
+            heatmap.unsqueeze(0).unsqueeze(0).float(),  # (1, 1, H_m, W_m)
+            size=(h, w),
+            mode="bilinear",
+            align_corners=False,
+        ).squeeze()  # (h, w)
+
         # Build GT mask as union of all entity boxes
         gt_mask = torch.zeros(h, w, dtype=torch.bool, device=heatmap.device)
         for entity in boxes:

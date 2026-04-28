@@ -14,9 +14,12 @@ Usage
 """
 
 import argparse
+import dataclasses
 import json
 import os
 from pathlib import Path
+
+import torch
 
 from core.config import AuditConfig
 from core.model import VLMAuditModel
@@ -25,7 +28,6 @@ from extraction.attention import AttentionExtractor
 from extraction.gradcam import GradCAMExtractor
 from evaluation.grounding import GroundingEvaluator
 from evaluation.faithfulness import FaithfulnessEvaluator
-from evaluation.results import EvalResults
 
 
 def parse_args() -> AuditConfig:
@@ -39,6 +41,12 @@ def parse_args() -> AuditConfig:
     parser.add_argument("--sensitivity-n",  type=int,   default=10)
     parser.add_argument("--saco-steps",     type=int,   default=20)
     parser.add_argument("--output-dir",  default="results")
+    parser.add_argument("--annotations-dir", default=None,
+                        help="Path to Flickr30k Entities Annotations/ XML folder")
+    parser.add_argument("--sentences-dir",   default=None,
+                        help="Path to Flickr30k Entities Sentences/ txt folder")
+    parser.add_argument("--split-file",      default=None,
+                        help="Path to txt file of image IDs for the eval split")
     args = parser.parse_args()
 
     return AuditConfig(
@@ -50,6 +58,9 @@ def parse_args() -> AuditConfig:
         sensitivity_n=args.sensitivity_n,
         saco_steps=args.saco_steps,
         output_dir=args.output_dir,
+        annotations_dir=args.annotations_dir,
+        sentences_dir=args.sentences_dir,
+        split_file=args.split_file,
     )
 
 
@@ -62,7 +73,6 @@ def main() -> None:
     # ------------------------------------------------------------------ #
     print(f"[core] Loading {config.model_name} on {config.device} ...")
     model = VLMAuditModel(config)
-    # TODO: model._load_model(); model._register_hooks()
 
     # ------------------------------------------------------------------ #
     # 2. Data — build DataLoader                                          #
@@ -75,20 +85,22 @@ def main() -> None:
     # ------------------------------------------------------------------ #
     attn_extractor = AttentionExtractor(
         config=config,
-        patch_grid=model.patch_grid,    # TODO: implement patch_grid property
-        image_size=(384, 384),          # TODO: derive from config/processor
+        patch_grid=model.patch_grid,
+        image_size=model.image_size,
     )
     grad_extractor = GradCAMExtractor(
         model=model,
         config=config,
-        image_size=(384, 384),
+        image_size=model.image_size,
     )
 
     # ------------------------------------------------------------------ #
-    # 4. Evaluation — initialise evaluators                               #
+    # 4. Evaluation — separate evaluators for each extraction method      #
     # ------------------------------------------------------------------ #
-    grounding_eval    = GroundingEvaluator(config)
-    faithfulness_eval = FaithfulnessEvaluator(model, config)
+    attn_grounding_eval    = GroundingEvaluator(config)
+    attn_faithfulness_eval = FaithfulnessEvaluator(model, config)
+    grad_grounding_eval    = GroundingEvaluator(config)
+    grad_faithfulness_eval = FaithfulnessEvaluator(model, config)
 
     # ------------------------------------------------------------------ #
     # 5. Main loop                                                        #
@@ -98,19 +110,21 @@ def main() -> None:
         images   = batch["image"]
         captions = batch["caption"]
         boxes    = batch["boxes"]
+        sizes    = batch["image_size"]
 
         # --- Forward pass (populates attention cache) ---
         output = model.forward(images, captions)
-        base_conf = output["logits"]   # TODO: extract per-sample confidence
+        base_conf = torch.softmax(output["logits"], dim=-1)[:, 1].detach().cpu()
 
         # --- Extract heatmaps ---
-        attn_cache = model.get_attention_cache()
-        attn_heatmaps = attn_extractor.extract(attn_cache)
+        attn_heatmaps = attn_extractor.extract(model.get_attention_cache())
         grad_heatmaps = grad_extractor.compute(images, captions)
 
-        # --- Accumulate scores (run both heatmap types) ---
-        grounding_eval.update(attn_heatmaps, boxes, image_sizes=None)   # TODO: pass sizes
-        faithfulness_eval.update(attn_heatmaps, images, captions, base_conf)
+        # --- Accumulate scores for both methods ---
+        attn_grounding_eval.update(attn_heatmaps, boxes, image_sizes=sizes)
+        attn_faithfulness_eval.update(attn_heatmaps, images, captions, base_conf)
+        grad_grounding_eval.update(grad_heatmaps, boxes, image_sizes=sizes)
+        grad_faithfulness_eval.update(grad_heatmaps, images, captions, base_conf)
 
         model.clear_cache()
 
@@ -120,16 +134,20 @@ def main() -> None:
     # ------------------------------------------------------------------ #
     # 6. Aggregate & save results                                         #
     # ------------------------------------------------------------------ #
-    results = EvalResults(
-        grounding=grounding_eval.compute(),
-        faithfulness=faithfulness_eval.compute(),
-        config_snapshot=vars(config),
-    )
-
-    print("\n" + results.summary())
-
     out_path = Path(config.output_dir) / "results.json"
-    # TODO: serialise EvalResults to JSON
+    out_data = {
+        "attention": {
+            "grounding":    [dataclasses.asdict(r) for r in attn_grounding_eval.compute()],
+            "faithfulness": [dataclasses.asdict(r) for r in attn_faithfulness_eval.compute()],
+        },
+        "gradcam": {
+            "grounding":    [dataclasses.asdict(r) for r in grad_grounding_eval.compute()],
+            "faithfulness": [dataclasses.asdict(r) for r in grad_faithfulness_eval.compute()],
+        },
+        "config": vars(config),
+    }
+    with open(out_path, "w") as f:
+        json.dump(out_data, f, indent=2)
     print(f"[audit] Results saved to {out_path}")
 
 

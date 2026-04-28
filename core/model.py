@@ -8,6 +8,18 @@ Thin wrapper around a pre-trained VLM (default: BLIP) that:
      model internals.
   3. Exposes `forward()` for a standard image+caption batch.
 
+Implementation notes
+--------------------
+BLIP text encoder layers each have a `crossattention.self` submodule
+(BlipTextSelfAttention).  When called with output_attentions=True it
+returns (context_layer, attn_probs) where attn_probs has shape
+(B, num_heads, T_text, N_visual).  N_visual = num_patches + 1 because
+the ViT vision encoder prepends a CLS token; we strip that token (index 0)
+before caching so downstream code always sees (B, heads, T, N_patches).
+
+patch_grid is derived from the vision encoder's config:
+  n = image_size // patch_size  →  grid = (n, n)
+For blip-itm-base-coco: image_size=384, patch_size=16 → (24, 24).
 """
 
 from __future__ import annotations
@@ -37,22 +49,32 @@ class VLMAuditModel:
         self._attention_cache: Dict[int, torch.Tensor] = {}
         self._hooks: List[torch.utils.hooks.RemovableHook] = []
 
-        self.processor = None   # TODO: load HuggingFace processor
-        self.model: Optional[nn.Module] = None  # TODO: load HuggingFace model
-        self._cross_attention_layers: List[nn.Module] = []  # TODO: populate after model load
+        self.processor = None
+        self.model: Optional[nn.Module] = None
+        self._cross_attention_layers: List[nn.Module] = []
 
-        # self._load_model()
-        # self._register_hooks()
+        self._load_model()
+        self._register_hooks()
 
     # ------------------------------------------------------------------
-    # Internal helpers (to be implemented)
+    # Internal helpers
     # ------------------------------------------------------------------
 
     def _load_model(self) -> None:
         """Load processor and model from HuggingFace hub."""
-        # TODO: use transformers.AutoProcessor / BlipForImageTextRetrieval
-        # Move model to self.config.device
-        raise NotImplementedError
+        from transformers import BlipForImageTextRetrieval, BlipProcessor
+
+        self.processor = BlipProcessor.from_pretrained(self.config.model_name)
+        self.model = BlipForImageTextRetrieval.from_pretrained(self.config.model_name)
+        self.model.to(self.config.device)
+        self.model.eval()
+
+        # BlipTextSelfAttention modules — one per text encoder layer.
+        # These are the modules whose forward output contains attention weights.
+        self._cross_attention_layers = [
+            layer.crossattention.self
+            for layer in self.model.text_encoder.encoder.layer
+        ]
 
     def _register_hooks(self) -> None:
         """
@@ -60,15 +82,18 @@ class VLMAuditModel:
         attention weight tensors are stored in self._attention_cache
         keyed by layer index.
         """
-        # TODO: iterate self._cross_attention_layers, attach hooks
-        raise NotImplementedError
+        for idx, layer in enumerate(self._cross_attention_layers):
+            h = layer.register_forward_hook(self._hook_fn(idx))
+            self._hooks.append(h)
 
     def _hook_fn(self, layer_idx: int):
-        """Returns a hook function that caches attention weights for `layer_idx`."""
+        """Returns a hook that caches detached attention weights for `layer_idx`."""
         def hook(module, input, output):
-            # TODO: extract attention weights from output tuple / dict
-            # self._attention_cache[layer_idx] = attention_weights
-            pass
+            # output is (context_layer, attn_probs) when output_attentions=True
+            if isinstance(output, tuple) and len(output) > 1:
+                attn = output[1]  # (B, heads, T_text, N_visual)
+                # Drop CLS visual token so shape is (B, heads, T_text, N_patches)
+                self._attention_cache[layer_idx] = attn[:, :, :, 1:].detach()
         return hook
 
     # ------------------------------------------------------------------
@@ -90,12 +115,28 @@ class VLMAuditModel:
 
         Returns
         -------
-        dict with at least {"logits": Tensor, "loss": Tensor | None}
+        dict with at least {"logits": Tensor (B, 2), "loss": None}
+        logits are ITM scores; take softmax[:, 1] for match probability.
         """
-        # TODO: tokenize captions with self.processor
-        # TODO: forward through self.model
-        # Hooks populate self._attention_cache automatically
-        raise NotImplementedError
+        text_inputs = self.processor.tokenizer(
+            captions,
+            return_tensors="pt",
+            padding=True,
+            truncation=True,
+            max_length=512,
+        ).to(self.config.device)
+
+        images = images.to(self.config.device)
+
+        outputs = self.model(
+            pixel_values=images,
+            input_ids=text_inputs["input_ids"],
+            attention_mask=text_inputs["attention_mask"],
+            output_attentions=True,  # needed so hooks receive attn_probs
+            return_dict=True,
+        )
+
+        return {"logits": outputs.itm_score, "loss": None}
 
     def get_attention_cache(self) -> Dict[int, torch.Tensor]:
         """
@@ -103,8 +144,7 @@ class VLMAuditModel:
 
         Returns
         -------
-        Dict mapping layer_index -> attention tensor
-        Shape per tensor: (B, num_heads, seq_len_text, num_patches)
+        Dict mapping layer_index -> Tensor (B, num_heads, T_text, N_patches)
         """
         return dict(self._attention_cache)
 
@@ -126,8 +166,15 @@ class VLMAuditModel:
     @property
     def patch_grid(self) -> Tuple[int, int]:
         """
-        (rows, cols) of the image patch grid.
-        Derived from the vision encoder's patch size and image resolution.
+        (rows, cols) of the image patch grid, excluding the CLS token.
+        For blip-itm-base-coco: image_size=384, patch_size=16 → (24, 24).
         """
-        # TODO: return (H // patch_size, W // patch_size)
-        raise NotImplementedError
+        cfg = self.model.vision_model.config
+        n = cfg.image_size // cfg.patch_size
+        return (n, n)
+
+    @property
+    def image_size(self) -> Tuple[int, int]:
+        """(H, W) of images expected by this model's processor."""
+        s = self.model.vision_model.config.image_size
+        return (s, s)

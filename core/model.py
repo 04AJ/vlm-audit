@@ -47,9 +47,7 @@ class VLMAuditModel:
         self._load_model()
         self._register_hooks()
 
-    # ------------------------------------------------------------------
-    # Internal helpers (to be implemented)
-    # ------------------------------------------------------------------
+    # Internal helpers
 
     @staticmethod
     def _resolve_device(device_name: str) -> torch.device:
@@ -152,9 +150,7 @@ class VLMAuditModel:
                     return mapped_value
         raise KeyError("Could not find a logits-like tensor in the model output.")
 
-    # ------------------------------------------------------------------
     # Public API
-    # ------------------------------------------------------------------
 
     def forward(
         self,

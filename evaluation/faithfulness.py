@@ -111,9 +111,7 @@ class FaithfulnessEvaluator:
             ))
         return results
 
-    # ------------------------------------------------------------------
     # Internal helpers
-    # ------------------------------------------------------------------
 
     def _sensitivity_n(
         self,

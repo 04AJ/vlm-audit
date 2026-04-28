@@ -77,9 +77,7 @@ class AttentionExtractor:
 
         return result
 
-    # ------------------------------------------------------------------
-    # Internal steps (implement each independently)
-    # ------------------------------------------------------------------
+    # Internal steps
 
     def _fuse_heads(self, weights: torch.Tensor) -> torch.Tensor:
         """

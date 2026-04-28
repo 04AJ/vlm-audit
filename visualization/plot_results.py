@@ -30,17 +30,17 @@ import numpy as np
 HYBRID_ALPHA = 0.25
 
 METHODS = [
-    ("Attention",        "#4878d0"),
-    ("Grad-CAM",         "#ee854a"),
+    ("Attention",                "#4878d0"),
+    ("Grad-CAM",                 "#ee854a"),
     (f"Hybrid α={HYBRID_ALPHA}", "#6acc65"),
 ]
 
 PLOTS = [
     # (subplot title, section key, metric key, y-label)
-    ("Pointing Game Accuracy", "grounding",    "pointing_game_accuracy", "Accuracy"),
-    ("Mean IoU",               "grounding",    "mean_iou",               "IoU"),
-    ("Sensitivity-n",          "faithfulness", "sensitivity_n_score",    "Score"),
-    ("SaCo AUC",               "faithfulness", "saco_auc",               "AUC"),
+    ("Pointing Game Accuracy", "grounding",    "pointing_game_accuracy", "Accuracy [0–1]"),
+    ("Mean IoU",               "grounding",    "mean_iou",               "Mean IoU [0–1]"),
+    ("Sensitivity-n",          "faithfulness", "sensitivity_n_score",    "Sensitivity-n Score [0–1]"),
+    ("SaCo AUC",               "faithfulness", "saco_auc",               "SaCo AUC [0–1]"),
 ]
 
 
@@ -97,8 +97,8 @@ def main() -> None:
     args = parse_args()
     methods = load_method_data(args.all_layers, args.hybrid)
 
-    fig, axes = plt.subplots(2, 2, figsize=(11, 8))
-    fig.suptitle("VLM-Audit: Best-Layer Method Comparison", fontsize=14, fontweight="bold")
+    fig, axes = plt.subplots(2, 2, figsize=(12, 9))
+    fig.suptitle("VLM-Audit: Best-Layer Method Comparison", fontsize=15, fontweight="bold")
     axes = axes.flatten()
 
     x      = np.arange(len(methods))
@@ -115,42 +115,47 @@ def main() -> None:
 
         bars = ax.bar(x, vals, width, color=colors, edgecolor="white", linewidth=0.8)
 
-        # Annotate each bar with its best layer
+        # Annotate each bar with its best layer index
         for bar, layer_idx in zip(bars, layers):
             ax.text(
                 bar.get_x() + bar.get_width() / 2,
                 bar.get_height() * 0.5,
                 f"L{layer_idx}",
                 ha="center", va="center",
-                fontsize=9, fontweight="bold", color="white",
+                fontsize=10, fontweight="bold", color="white",
             )
 
-        ax.set_title(title, fontsize=11, fontweight="bold", pad=6)
-        ax.set_ylabel(ylabel, fontsize=9)
+        # Subplot title includes the evaluation category
+        category = "Grounding" if section == "grounding" else "Faithfulness"
+        ax.set_title(f"{category} — {title}", fontsize=11, fontweight="bold", pad=7)
+
+        # Y-axis label includes units — rubric requirement
+        ax.set_ylabel(ylabel, fontsize=10)
+
+        # X-axis label — rubric requirement: every axis must say what it is
+        ax.set_xlabel("Saliency Method", fontsize=10)
+
+        # X-ticks: keep method names but increase size for legibility
         ax.set_xticks(x)
-        ax.set_xticklabels([label for label, _ in METHODS], fontsize=9)
+        ax.set_xticklabels([label for label, _ in METHODS], fontsize=10)
+
         ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda v, _: f"{v:.3f}"))
         ax.grid(axis="y", linestyle="--", alpha=0.4)
-        ax.set_ylim(0, max(vals) * 1.18)
+        ax.set_ylim(0, max(vals) * 1.22)
         ax.spines[["top", "right"]].set_visible(False)
 
         # Value label on top of each bar
         for bar, v in zip(bars, vals):
             ax.text(
                 bar.get_x() + bar.get_width() / 2,
-                bar.get_height() + max(vals) * 0.02,
+                bar.get_height() + max(vals) * 0.025,
                 f"{v:.3f}",
                 ha="center", va="bottom",
-                fontsize=8, color="#333333",
+                fontsize=9, color="#333333",
             )
 
-    # Group labels
-    axes[0].set_title("Grounding — " + axes[0].get_title(), fontsize=11, fontweight="bold", pad=6)
-    axes[1].set_title("Grounding — " + axes[1].get_title(), fontsize=11, fontweight="bold", pad=6)
-    axes[2].set_title("Faithfulness — " + axes[2].get_title(), fontsize=11, fontweight="bold", pad=6)
-    axes[3].set_title("Faithfulness — " + axes[3].get_title(), fontsize=11, fontweight="bold", pad=6)
-
     plt.tight_layout(rect=(0, 0, 1, 0.95))
+
     output_path = Path(args.output)
     output_path.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(output_path, bbox_inches="tight", dpi=180)

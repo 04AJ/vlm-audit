@@ -19,7 +19,7 @@ from data.flickr30k import Flickr30kDataset
 from extraction.attention import AttentionExtractor
 from extraction.gradcam import GradCAMExtractor
 
-# ------------------------------------------------------------------ config --
+# config
 
 N_IMAGES = 3
 LAYER    = 9
@@ -31,7 +31,7 @@ ANNOTATIONS_DIR = os.path.join(_SCRATCH_DATA, "Annotations")
 SENTENCES_DIR   = os.path.join(_SCRATCH_DATA, "Sentences")
 SPLIT_FILE      = os.path.join(_REPO_ROOT, "data", "test.txt")
 
-# ------------------------------------------------------------------ helpers --
+# helpers 
 
 def to_numpy_image(tensor: torch.Tensor) -> np.ndarray:
     """Convert (C, H, W) float tensor → (H, W, 3) uint8 numpy array."""
@@ -162,8 +162,6 @@ def _peak_in_boxes(heatmap: torch.Tensor, boxes: list, image_size: tuple) -> boo
             return True
     return False
 
-
-# --------------------------------------------------------------------- main --
 
 def main():
     config = AuditConfig(

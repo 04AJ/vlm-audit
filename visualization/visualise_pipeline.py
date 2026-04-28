@@ -29,14 +29,14 @@ from visualization.visualise_maps import (
     config_image_size,
 )
 
-# ------------------------------------------------------------------ config --
+# config 
 
 N_SEARCH   = 150
 START_IDX  = 50
 SACO_STEPS = 10    # increase to 20 for final version
 ALPHA      = 0.25  # hybrid blend weight (attention fraction)
 
-# ------------------------------------------------------------------ metrics --
+# metrics
 
 def _get_base_confidence(model, image_t, caption):
     with torch.no_grad():
@@ -78,7 +78,7 @@ def _annotate_metrics(ax, m_this, m_others):
                           boxstyle="round,pad=0.25"))
 
 
-# ---------------------------------------------------------- image selection --
+# image selection 
 
 def _find_examples(model, dataset, attn_extractor, gradcam_extractor,
                    hybrid_extractor, grounding_eval, layer):
@@ -146,7 +146,7 @@ def _find_examples(model, dataset, attn_extractor, gradcam_extractor,
     return [e for e in ordered if e is not None][:3]
 
 
-# ------------------------------------------------------------ main figure ---
+# main figure 
 
 def plot_pipeline(
     model, dataset, attn_extractor, gradcam_extractor, hybrid_extractor,
@@ -224,7 +224,7 @@ def plot_pipeline(
     plt.close(fig)
 
 
-# --------------------------------------------------------------------- main --
+# main
 
 def main():
     config = AuditConfig(

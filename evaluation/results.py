@@ -54,9 +54,7 @@ class EvalResults:
     hybrid: List[HybridResult] = field(default_factory=list)
     config_snapshot: Dict = field(default_factory=dict)
 
-    # ------------------------------------------------------------------
     # Convenience accessors
-    # ------------------------------------------------------------------
 
     def best_grounding_layer(self) -> Optional[LayerGroundingResult]:
         """Return the attention-heatmap layer with highest mean IoU, or None if empty."""

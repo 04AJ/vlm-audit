@@ -91,9 +91,7 @@ class GradCAMExtractor:
 
         return heatmaps
 
-    # ------------------------------------------------------------------
     # Hook management
-    # ------------------------------------------------------------------
 
     def _register_grad_hooks(self) -> None:
         """
@@ -133,9 +131,7 @@ class GradCAMExtractor:
         self._activation_cache.clear()
         self._gradient_cache.clear()
 
-    # ------------------------------------------------------------------
     # Grad-CAM computation helpers
-    # ------------------------------------------------------------------
 
     def _select_target_score(self, model_output: Dict) -> torch.Tensor:
         """

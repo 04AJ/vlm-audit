@@ -56,9 +56,7 @@ class Flickr30kDataset(Dataset):
         self._hf_dataset = None
         self._load()
 
-    # ------------------------------------------------------------------
     # Loading
-    # ------------------------------------------------------------------
 
     def _load(self) -> None:
         """Stream images from HuggingFace, keeping only IDs in split_file."""
@@ -122,9 +120,7 @@ class Flickr30kDataset(Dataset):
             "image_size": (img_h, img_w),  # (H, W) for grounding evaluator
         }
 
-    # ------------------------------------------------------------------
     # Annotation helpers
-    # ------------------------------------------------------------------
 
     def _load_sentence(self, filename: str) -> Tuple[str, Dict[str, str]]:
         """
@@ -218,9 +214,7 @@ class Flickr30kDataset(Dataset):
 
         return boxes
 
-    # ------------------------------------------------------------------
     # Collation
-    # ------------------------------------------------------------------
 
     @staticmethod
     def collate_fn(batch: List[Dict]) -> Dict:

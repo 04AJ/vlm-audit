@@ -29,13 +29,13 @@ from visualization.visualise_maps import (
     config_image_size, _peak_in_boxes,
 )
 
-# ------------------------------------------------------------------ config --
+# config 
 
 N_SEARCH     = 200
 N_CASES      = 3     # correct cases and failure cases each
 ALPHA        = 0.25
 
-# ------------------------------------------------------------------- figure --
+# figure 
 
 def plot_failure_comparison(
     model: VLMAuditModel,
@@ -166,7 +166,7 @@ def plot_failure_comparison(
     plt.close(fig)
 
 
-# --------------------------------------------------------------------- main --
+# main 
 
 def main():
     config = AuditConfig(

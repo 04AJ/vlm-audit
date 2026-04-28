@@ -35,7 +35,9 @@ SAVE_DIR    = "results/experimentation"
 ALPHA       = 0.25
 
 _REPO_ROOT      = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-_SCRATCH_DATA   = os.environ.get("SCRATCH_DATA_DIR", "/scratch/comp-646-g9/data")
+_SCRATCH_DATA = os.environ.get("DATA_DIR")
+if not _SCRATCH_DATA:
+    raise EnvironmentError("DATA_DIR is not set. Run: source scripts/config.sh")
 ANNOTATIONS_DIR = os.path.join(_SCRATCH_DATA, "Annotations")
 SENTENCES_DIR   = os.path.join(_SCRATCH_DATA, "Sentences")
 SPLIT_FILE      = os.path.join(_REPO_ROOT, "data", "test.txt")

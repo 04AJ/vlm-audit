@@ -10,7 +10,9 @@ from dataclasses import dataclass, field
 from typing import List, Optional
 
 _DATA_DIR       = os.environ.get("DATA_DIR", "data")
-_SCRATCH_DATA   = os.environ.get("SCRATCH_DATA_DIR", "/scratch/comp-646-g9/data")
+_SCRATCH_DATA = os.environ.get("DATA_DIR")
+if not _SCRATCH_DATA:
+    raise EnvironmentError("DATA_DIR is not set. Run: source scripts/config.sh")
 _REPO_ROOT      = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 

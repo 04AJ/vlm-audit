@@ -99,8 +99,23 @@ Choose the option that matches where you are running the code.
 
 Use a Python virtual environment when running on your own laptop or desktop.
 
+**Step 1 — update `scripts/config.sh`** so `SCRATCH_DIR` points to your local data folder. Since `Annotations/` and `Sentences/` live inside `data/`, set it to:
+
 ```bash
-# Create the environment (run once)
+PROJECT_DIR="/path/to/vlm-audit"   # absolute path to your cloned repo
+SCRATCH_DIR="$PROJECT_DIR/data"    # local data folder (contains Annotations/ and Sentences/)
+```
+
+Then source it before running anything:
+
+```bash
+source scripts/config.sh
+```
+
+**Step 2 — create and activate the virtual environment:**
+
+```bash
+# Create (run once)
 python3 -m venv .venv
 ```
 
@@ -175,7 +190,7 @@ pip show opencv-python   # copy the Version field
 
 The pipeline uses [Flickr30k Entities](https://github.com/BryanPlummer/flickr30k_entities) for bounding-box annotations and captions, and HuggingFace for images.
 
-### Setting up annotation files
+### Option 1 — Local machine
 
 1. Download the annotations archive from the [flickr30k_entities releases](https://github.com/BryanPlummer/flickr30k_entities/tree/master) page
 2. Extract the zip
@@ -191,11 +206,28 @@ vlm-audit/
 
 > `Annotations/` and `Sentences/` are git-ignored and must be set up locally by each team member.
 
+### Option 2 — NOTS cluster
+
+Download the annotations archive to the shared scratch location so all team members can access them:
+
+1. Download the annotations archive from the [flickr30k_entities releases](https://github.com/BryanPlummer/flickr30k_entities/tree/master) page
+2. Extract the zip
+3. Copy the `Annotations` and `Sentences` folders into `$SCRATCH_DIR/data/` (wherever `SCRATCH_DIR` is set in `scripts/config.sh`):
+
+```
+$SCRATCH_DIR/data/
+    ├── Annotations/       ← XML bounding-box files (one per image)
+    └── Sentences/         ← Caption files with entity tags (one per image)
+```
+
+This only needs to be done once — the scratch location is shared across the team.
+
 ### Testing the data loader
 
-With your environment active (venv or Conda) and annotation files in place, run:
+With your environment active, source `config.sh` to export `DATA_DIR`, then run the test:
 
 ```bash
+source scripts/config.sh
 python -m data.test_flickr
 ```
 

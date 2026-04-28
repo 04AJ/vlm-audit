@@ -1,54 +1,166 @@
+"""
+Plot VLM-Audit best-layer results for Attention, Grad-CAM, and Hybrid α=0.25.
+
+Loads two JSON files:
+  - results_all_layers.json  : {"attention": {...}, "gradcam": {...}}
+  - results_hybrid.json      : {"hybrid": [{"alpha": 0.25, ...}, ...]}
+
+Produces a 2×2 figure:
+  Top row    — Grounding    : Pointing Game Accuracy  |  Mean IoU
+  Bottom row — Faithfulness : Sensitivity-n           |  SaCo AUC
+
+Each subplot shows one bar per method at its single best layer.
+The best layer index is annotated inside each bar.
+
+Run from repo root:
+    python -m visualization.plot_results
+    python -m visualization.plot_results --all-layers results/results_all_layers.json \
+                                         --hybrid     results/results_hybrid.json \
+                                         --output     results/figures/best_layer_comparison.pdf
+"""
+
+import argparse
 import json
+from pathlib import Path
+
 import matplotlib.pyplot as plt
 import numpy as np
 
-RESULTS_PATH = "results/results_20260331_063826.json"
 
-with open(RESULTS_PATH) as f:
-    data = json.load(f)
+HYBRID_ALPHA = 0.25
 
-layers = [e["layer_idx"] for e in data["grounding"]]
-x = np.arange(len(layers))
-width = 0.18
-labels = [f"Layer {l}" for l in layers]
+METHODS = [
+    ("Attention",                "#4878d0"),
+    ("Grad-CAM",                 "#ee854a"),
+    (f"Hybrid α={HYBRID_ALPHA}", "#6acc65"),
+]
 
-def get(section, key):
-    return [e[key] for e in data[section]]
+PLOTS = [
+    # (subplot title, section key, metric key, y-label)
+    ("Pointing Game Accuracy", "grounding",    "pointing_game_accuracy", "Accuracy [0–1]"),
+    ("Mean IoU",               "grounding",    "mean_iou",               "Mean IoU [0–1]"),
+    ("Sensitivity-n",          "faithfulness", "sensitivity_n_score",    "Sensitivity-n Score [0–1]"),
+    ("SaCo AUC",               "faithfulness", "saco_auc",               "SaCo AUC [0–1]"),
+]
 
-fig, axes = plt.subplots(1, 2, figsize=(13, 5))
-fig.suptitle("VLM Audit — Attention vs GradCAM", fontsize=14, fontweight="bold")
 
-# --- Grounding ---
-ax = axes[0]
-ax.bar(x - width*1.5, get("grounding", "pointing_game_accuracy"), width, label="Attn — Pointing Game Acc", color="#4C72B0")
-ax.bar(x - width*0.5, get("grounding_grad", "pointing_game_accuracy"), width, label="Grad — Pointing Game Acc", color="#4C72B0", alpha=0.5, hatch="//")
-ax.bar(x + width*0.5, get("grounding", "mean_iou"), width, label="Attn — Mean IoU", color="#DD8452")
-ax.bar(x + width*1.5, get("grounding_grad", "mean_iou"), width, label="Grad — Mean IoU", color="#DD8452", alpha=0.5, hatch="//")
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Plot best-layer VLM-Audit results.")
+    parser.add_argument(
+        "--all-layers",
+        default="results/results_all_layers.json",
+        help="Path to results_all_layers.json (attention + gradcam data).",
+    )
+    parser.add_argument(
+        "--hybrid",
+        default="results/results_hybrid.json",
+        help="Path to results_hybrid.json (hybrid alpha sweep data).",
+    )
+    parser.add_argument(
+        "--output",
+        default="results/figures/best_layer_comparison.pdf",
+        help="Output PDF path.",
+    )
+    return parser.parse_args()
 
-ax.set_yscale("log")
-ax.set_title("Grounding")
-ax.set_xticks(x)
-ax.set_xticklabels(labels)
-ax.set_ylabel("Score (log scale)")
-ax.legend(fontsize=8)
-ax.grid(axis="y", linestyle="--", alpha=0.4)
 
-# --- Faithfulness ---
-ax = axes[1]
-ax.bar(x - width*1.5, get("faithfulness", "saco_auc"), width, label="Attn — SaCo AUC", color="#55A868")
-ax.bar(x - width*0.5, get("faithfulness_grad", "saco_auc"), width, label="Grad — SaCo AUC", color="#55A868", alpha=0.5, hatch="//")
-ax.bar(x + width*0.5, get("faithfulness", "sensitivity_n_score"), width, label="Attn — Sensitivity-N", color="#C44E52")
-ax.bar(x + width*1.5, get("faithfulness_grad", "sensitivity_n_score"), width, label="Grad — Sensitivity-N", color="#C44E52", alpha=0.5, hatch="//")
+def best(entries: list[dict], key: str) -> tuple[float, int]:
+    """Return (best_value, best_layer_idx) for a metric key across all layers."""
+    best_entry = max(entries, key=lambda e: e[key])
+    return best_entry[key], best_entry["layer_idx"]
 
-ax.set_yscale("log")
-ax.set_title("Faithfulness")
-ax.set_xticks(x)
-ax.set_xticklabels(labels)
-ax.set_ylabel("Score (log scale)")
-ax.legend(fontsize=8)
-ax.grid(axis="y", linestyle="--", alpha=0.4)
 
-plt.tight_layout()
-plt.savefig("visualization/results_barplot.pdf", bbox_inches="tight")
-print("Saved: visualization/results_barplot.pdf")
-plt.show()
+def load_method_data(all_layers_path: str, hybrid_path: str) -> list[tuple[str, dict]]:
+    """
+    Returns list of (method_label, {section: entries}) for the three methods.
+    """
+    with open(all_layers_path) as f:
+        al = json.load(f)
+    with open(hybrid_path) as f:
+        hy = json.load(f)
+
+    hybrid_entry = next(
+        e for e in hy["hybrid"] if abs(e["alpha"] - HYBRID_ALPHA) < 1e-6
+    )
+
+    return [
+        ("Attention",                  {"grounding": al["attention"]["grounding"],
+                                        "faithfulness": al["attention"]["faithfulness"]}),
+        ("Grad-CAM",                   {"grounding": al["gradcam"]["grounding"],
+                                        "faithfulness": al["gradcam"]["faithfulness"]}),
+        (f"Hybrid α={HYBRID_ALPHA}",   {"grounding": hybrid_entry["grounding"],
+                                        "faithfulness": hybrid_entry["faithfulness"]}),
+    ]
+
+
+def main() -> None:
+    args = parse_args()
+    methods = load_method_data(args.all_layers, args.hybrid)
+
+    fig, axes = plt.subplots(2, 2, figsize=(12, 9))
+    fig.suptitle("VLM-Audit: Best-Layer Method Comparison", fontsize=15, fontweight="bold")
+    axes = axes.flatten()
+
+    x      = np.arange(len(methods))
+    width  = 0.5
+    colors = [c for _, c in METHODS]
+
+    for ax, (title, section, key, ylabel) in zip(axes, PLOTS):
+        vals   = []
+        layers = []
+        for _, data in methods:
+            v, l = best(data[section], key)
+            vals.append(v)
+            layers.append(l)
+
+        bars = ax.bar(x, vals, width, color=colors, edgecolor="white", linewidth=0.8)
+
+        # Annotate each bar with its best layer index
+        for bar, layer_idx in zip(bars, layers):
+            ax.text(
+                bar.get_x() + bar.get_width() / 2,
+                bar.get_height() * 0.5,
+                f"L{layer_idx}",
+                ha="center", va="center",
+                fontsize=10, fontweight="bold", color="white",
+            )
+
+        # Subplot title includes the evaluation category
+        category = "Grounding" if section == "grounding" else "Faithfulness"
+        ax.set_title(f"{category} — {title}", fontsize=11, fontweight="bold", pad=7)
+
+        # Y-axis label includes units — rubric requirement
+        ax.set_ylabel(ylabel, fontsize=10)
+
+        # X-axis label — rubric requirement: every axis must say what it is
+        ax.set_xlabel("Saliency Method", fontsize=10)
+
+        # X-ticks: keep method names but increase size for legibility
+        ax.set_xticks(x)
+        ax.set_xticklabels([label for label, _ in METHODS], fontsize=10)
+
+        ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda v, _: f"{v:.3f}"))
+        ax.grid(axis="y", linestyle="--", alpha=0.4)
+        ax.set_ylim(0, max(vals) * 1.22)
+        ax.spines[["top", "right"]].set_visible(False)
+
+        # Value label on top of each bar
+        for bar, v in zip(bars, vals):
+            ax.text(
+                bar.get_x() + bar.get_width() / 2,
+                bar.get_height() + max(vals) * 0.025,
+                f"{v:.3f}",
+                ha="center", va="bottom",
+                fontsize=9, color="#333333",
+            )
+
+    plt.tight_layout(rect=(0, 0, 1, 0.95))
+
+    output_path = Path(args.output)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(output_path, bbox_inches="tight", dpi=180)
+    print(f"[plot] Saved → {output_path}")
+
+
+if __name__ == "__main__":
+    main()

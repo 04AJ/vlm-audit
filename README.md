@@ -17,9 +17,14 @@ Input (Image + Caption)
 └───────┬───────┘
         │  attention cache  Dict[layer → Tensor]
         ▼
-┌──────────────────┐
-│ Extraction Layer │  Converts raw weights → spatial heatmaps (Attention + Grad-CAM)
-└────────┬─────────┘
+┌──────────────────────────────────────────────┐
+│              Extraction Layer                │
+│                                              │
+│  AttentionExtractor  →  attention heatmaps   │
+│  GradCAMExtractor    →  grad-cam heatmaps    │
+│  HybridExtractor     →  alpha·attn +         │
+│                         (1−alpha)·gradcam    │
+└────────┬─────────────────────────────────────┘
          │  heatmaps  Dict[layer → Tensor (B, H, W)]
          ▼
 ┌──────────────────┐
@@ -28,6 +33,7 @@ Input (Image + Caption)
          │
          ▼
 Output: reliability scorecard (IoU, Pointing Game, Sensitivity-n, SaCo)
+        — evaluated separately for Attention, Grad-CAM, and each Hybrid alpha
 ```
 
 ## Repository Structure
@@ -43,7 +49,8 @@ vlm-audit/
 │
 ├── extraction/             # Heatmap extraction from attention internals
 │   ├── attention.py        #   Raw attention weights → upsampled spatial heatmaps
-│   └── gradcam.py          #   Grad-CAM over cross-attention layers
+│   ├── gradcam.py          #   Grad-CAM over cross-attention layers
+│   └── hybrid.py           #   Blended heatmap: alpha·attention + (1−alpha)·Grad-CAM
 │
 ├── evaluation/             # Quantitative scoring
 │   ├── grounding.py        #   Pointing Game Accuracy + IoU vs GT bounding boxes
@@ -59,20 +66,6 @@ vlm-audit/
 ├── requirements.txt
 └── pyproject.toml
 ```
-
-## Module Interfaces
-
-Each module has a narrow, explicit interface so they can be developed independently.
-
-| Producer | Output | Consumer |
-|---|---|---|
-| `VLMAuditModel.get_attention_cache()` | `Dict[int, Tensor (B, heads, T, N)]` | `AttentionExtractor`, `GradCAMExtractor` |
-| `AttentionExtractor.extract()` | `Dict[int, Tensor (B, H, W)]` | `GroundingEvaluator`, `FaithfulnessEvaluator` |
-| `GradCAMExtractor.compute()` | `Dict[int, Tensor (B, H, W)]` | `GroundingEvaluator`, `FaithfulnessEvaluator` |
-| `GroundingEvaluator.compute()` | `List[LayerGroundingResult]` | `EvalResults` |
-| `FaithfulnessEvaluator.compute()` | `List[LayerFaithfulnessResult]` | `EvalResults` |
-
-`AuditConfig` (`core/config.py`) is the single source of truth for all hyperparameters and is imported by every module.
 
 ## Dataset
 
@@ -98,18 +91,28 @@ Both metrics are computed per layer, allowing identification of which transforme
 
 ## Setup
 
-### 1. Create and activate a virtual environment (outside cluster environment)
+Choose the option that matches where you are running the code.
+
+---
+
+### Option 1 — Local machine (outside cluster)
+
+Use a Python virtual environment when running on your own laptop or desktop.
+
+No path configuration needed — scripts default to `data/` inside the repo, which is where your `Annotations/` and `Sentences/` folders should live.
+
+**Create and activate the virtual environment:**
 
 ```bash
 # Create (run once)
-python -m venv .venv
+python3 -m venv .venv
 ```
 
 Activate — pick the command for your terminal:
 
 ```bash
-# Git Bash / bash
-source .venv/Scripts/activate
+# macOS / Linux (bash, zsh)
+source .venv/bin/activate
 
 # PowerShell
 .venv\Scripts\Activate.ps1
@@ -118,18 +121,56 @@ source .venv/Scripts/activate
 .venv\Scripts\activate.bat
 ```
 
-You should see `(.venv)` in your prompt.
+You should see `(.venv)` in your prompt. Then install dependencies:
 
-### 2. Install dependencies (inside cluster environment)
+```bash
+pip install "torch>=2.6" torchvision --index-url https://download.pytorch.org/whl/cu124
+pip install -r requirements.txt
+```
+
+---
+
+### Option 2 — NOTS cluster
+
+#### First-time environment creation
+
+**Step 1 — update `scripts/config.sh`** with your own paths:
+
+```bash
+PROJECT_DIR="$HOME/vlm-audit"        # path to your cloned repo
+SCRATCH_DIR="/scratch/comp-646-g9"   # scratch space for the env and data
+```
+
+**Step 2 — set `DATA_DIR`** so the scripts find the annotations in scratch rather than the repo:
+
+```bash
+export DATA_DIR="$SCRATCH_DIR/data"
+```
+
+Or add it to your `~/.bashrc` to avoid setting it each session.
+
+**Step 3 — submit the creation job:**
+
+```bash
+sbatch scripts/conda_setup.sh --create
+```
+
+This creates the Conda environment at `$SCRATCH_DIR/vlm_audit_env`, installs PyTorch (CUDA 12.4), and then installs everything in `requirements.txt`. Monitor progress with:
+
+```bash
+tail -f logs/setup_<JOBID>.log
+```
+
+#### Daily use
+
+Once the environment exists, activate it with:
 
 ```bash
 module load Miniforge3/25.3.0-3
 conda activate /scratch/comp-646-g9/vlm_audit_env
 ```
 
-The environment already exists at `/scratch/comp-646-g9/vlm_audit_env` — do not run `--create`.
-
-**Adding a new package:**
+#### Adding a new package
 
 1. Add the package name to `requirements.txt` without a version number, e.g. `opencv-python`
 2. Run the update job:
@@ -146,7 +187,7 @@ pip show opencv-python   # copy the Version field
 
 The pipeline uses [Flickr30k Entities](https://github.com/BryanPlummer/flickr30k_entities) for bounding-box annotations and captions, and HuggingFace for images.
 
-### Setting up annotation files
+### Option 1 — Local machine
 
 1. Download the annotations archive from the [flickr30k_entities releases](https://github.com/BryanPlummer/flickr30k_entities/tree/master) page
 2. Extract the zip
@@ -162,9 +203,25 @@ vlm-audit/
 
 > `Annotations/` and `Sentences/` are git-ignored and must be set up locally by each team member.
 
+### Option 2 — NOTS cluster
+
+Download the annotations archive to the shared scratch location so all team members can access them:
+
+1. Download the annotations archive from the [flickr30k_entities releases](https://github.com/BryanPlummer/flickr30k_entities/tree/master) page
+2. Extract the zip
+3. Copy the `Annotations` and `Sentences` folders into `$SCRATCH_DIR/data/` (wherever `SCRATCH_DIR` is set in `scripts/config.sh`):
+
+```
+$SCRATCH_DIR/data/
+    ├── Annotations/       ← XML bounding-box files (one per image)
+    └── Sentences/         ← Caption files with entity tags (one per image)
+```
+
+This only needs to be done once — the scratch location is shared across the team.
+
 ### Testing the data loader
 
-With your venv active and annotation files in place, run:
+With your environment active, run the test:
 
 ```bash
 python -m data.test_flickr
@@ -174,7 +231,15 @@ This loads 3 images from the test split, checks captions and bounding boxes, and
 
 ## Usage
 
-### Option 1 — SLURM batch job
+### Option 1 — Local machine
+
+With your venv active, run the pipeline on a single layer to verify everything works (~2–3 minutes on CPU):
+
+```bash
+python run_audit.py --layers 6 --max-samples 10 --saco-steps 3 --output-dir results/test_run
+```
+
+### Option 2 — NOTS cluster (SLURM batch job)
 
 Submit the audit as a SLURM job (runs unattended on a compute node):
 
@@ -182,9 +247,9 @@ Submit the audit as a SLURM job (runs unattended on a compute node):
 sbatch scripts/run_audit.sh
 ```
 
-Logs are written to `logs/audit_<JOBID>.log` and `logs/audit_<JOBID>.err`.
+The default job runs a single layer (`--layers 6`). Logs are written to `logs/audit<JOBID>.log` and `logs/audit<JOBID>.err`.
 
-### Option 2 — Interactive shell
+### Option 2 — NOTS cluster (interactive shell)
 
 Request a GPU-enabled compute node and run the pipeline directly:
 
@@ -192,14 +257,22 @@ Request a GPU-enabled compute node and run the pipeline directly:
 srun --pty --time=2:59:59 --gpus=1 --reservation=classroom --mem=64G $SHELL
 ```
 
-Then activate the environment and run:
+Then activate the environment and run a single layer:
 
 ```bash
 module load Miniforge3/25.3.0-3
 conda activate /scratch/comp-646-g9/vlm_audit_env
 
-python run_audit.py
+python run_audit.py --layers 6 --max-samples 50 --output-dir results/test_run
 ```
+
+---
+
+### Full audit (all layers)
+
+> **Warning:** Running all 12 layers with a large sample count takes a significant amount of time (90+ minutes depending on hardware). Make sure you have a GPU available and enough time allocated before starting.
+
+**Specific layers:**
 
 ```bash
 python run_audit.py \
@@ -209,3 +282,41 @@ python run_audit.py \
   --output-dir results/run_01
 ```
 
+**All 12 layers with hybrid alpha sweep:**
+
+```bash
+python run_audit.py \
+  --layers 0 1 2 3 4 5 6 7 8 9 10 11 \
+  --hybrid-alphas 0.25 0.5 0.75 \
+  --max-samples 500 \
+  --output-dir results/hybrid_all12
+```
+
+## Visualization
+
+### Pipeline figure (Figure 1)
+
+Generates a 3-row × 4-column figure showing real examples side-by-side: original image with ground-truth boxes, raw attention heatmap, Grad-CAM heatmap, and hybrid blend (α=0.25). Each heatmap panel is annotated with per-sample PGA, IoU, Sensitivity, and SaCo scores.
+
+Run from the repo root with your environment active:
+
+```bash
+export HF_HOME=/scratch/comp-646-g9/cache/huggingface # If running on NOTS
+python -m visualization.visualise_pipeline
+```
+
+Output is saved to `results/pipeline/fig1_pipeline.pdf`.
+
+**Configuration** (edit constants at the top of [visualization/visualise_pipeline.py](visualization/visualise_pipeline.py)):
+
+| Constant | Default | Description |
+|---|---|---|
+| `LAYER` | `9` | Transformer layer to visualise (set in `visualise_maps.py`) |
+| `ALPHA` | `0.25` | Hybrid blend weight (attention fraction) |
+| `N_SEARCH` | `150` | Number of samples to scan when selecting examples |
+| `START_IDX` | `50` | Dataset index to start scanning from |
+| `SACO_STEPS` | `10` | Masking steps for SaCo — increase to `20` for final figures |
+
+The script runs on CPU and selects 3 diverse examples automatically: one where Grad-CAM outperforms attention, one where both methods are correct, and a fallback.
+
+![Pipeline figure](results/pipeline/fig-1.png)

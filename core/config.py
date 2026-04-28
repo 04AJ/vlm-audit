@@ -9,9 +9,8 @@ import os
 from dataclasses import dataclass, field
 from typing import List, Optional
 
-_DATA_DIR       = os.environ.get("DATA_DIR", "data")
-_SCRATCH_DATA   = os.environ.get("SCRATCH_DATA_DIR", "/scratch/comp-646-g9/data")
-_REPO_ROOT      = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+_REPO_ROOT    = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+_SCRATCH_DATA = os.environ.get("DATA_DIR", os.path.join(_REPO_ROOT, "data"))
 
 
 @dataclass
@@ -29,6 +28,7 @@ class AuditConfig:
     dataset_name: str = "nlphuji/flickr30k"
     dataset_split: str = "test"
     max_samples: Optional[int] = None       # None = use full split
+    batch_size: int = 8
     annotations_dir: Optional[str] = field(default_factory=lambda: os.path.join(_SCRATCH_DATA, "Annotations"))
     sentences_dir: Optional[str] = field(default_factory=lambda: os.path.join(_SCRATCH_DATA, "Sentences"))
     split_file: Optional[str] = field(default_factory=lambda: os.path.join(_REPO_ROOT, "data", "test.txt"))
@@ -36,6 +36,7 @@ class AuditConfig:
     # --- Extraction ---
     attention_head_fusion: str = "mean"     # "mean" | "max" | "min"
     gradcam_relu: bool = True
+    hybrid_alphas: List[float] = field(default_factory=list)  # attention weight in alpha*attn + (1-alpha)*grad
 
     # --- Evaluation ---
     iou_threshold: float = 0.5
@@ -45,3 +46,4 @@ class AuditConfig:
     # --- Output ---
     output_dir: str = "results"
     save_heatmaps: bool = True
+    hybrid_only: bool = False

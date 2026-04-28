@@ -51,7 +51,6 @@ htmlcov/
 .ruff_cache/
 
 # Experiments
-experimentation/
 test_flickr/
 
 data/Annotations/

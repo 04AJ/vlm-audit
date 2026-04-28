@@ -1,0 +1,414 @@
+{
+  "grounding": [],
+  "faithfulness": [],
+  "grounding_grad": [],
+  "faithfulness_grad": [],
+  "hybrid": [
+    {
+      "alpha": 0.25,
+      "grounding": [
+        {
+          "layer_idx": 0,
+          "pointing_game_accuracy": 0.332,
+          "mean_iou": 0.007519752663426919
+        },
+        {
+          "layer_idx": 1,
+          "pointing_game_accuracy": 0.36,
+          "mean_iou": 0.00575223490877297
+        },
+        {
+          "layer_idx": 2,
+          "pointing_game_accuracy": 0.346,
+          "mean_iou": 0.00646129874340561
+        },
+        {
+          "layer_idx": 3,
+          "pointing_game_accuracy": 0.418,
+          "mean_iou": 0.010377586099219526
+        },
+        {
+          "layer_idx": 4,
+          "pointing_game_accuracy": 0.446,
+          "mean_iou": 0.008913664741985865
+        },
+        {
+          "layer_idx": 5,
+          "pointing_game_accuracy": 0.422,
+          "mean_iou": 0.008575145550960199
+        },
+        {
+          "layer_idx": 6,
+          "pointing_game_accuracy": 0.41,
+          "mean_iou": 0.006613217906450328
+        },
+        {
+          "layer_idx": 7,
+          "pointing_game_accuracy": 0.538,
+          "mean_iou": 0.010252995363757783
+        },
+        {
+          "layer_idx": 8,
+          "pointing_game_accuracy": 0.492,
+          "mean_iou": 0.00924170458237006
+        },
+        {
+          "layer_idx": 9,
+          "pointing_game_accuracy": 0.366,
+          "mean_iou": 0.004004587744255591
+        },
+        {
+          "layer_idx": 10,
+          "pointing_game_accuracy": 0.484,
+          "mean_iou": 0.02306457594071492
+        },
+        {
+          "layer_idx": 11,
+          "pointing_game_accuracy": 0.398,
+          "mean_iou": 0.006663802350845427
+        }
+      ],
+      "faithfulness": [
+        {
+          "layer_idx": 0,
+          "sensitivity_n_score": 0.06158692865719786,
+          "saco_auc": 0.4151615897557931
+        },
+        {
+          "layer_idx": 1,
+          "sensitivity_n_score": 0.07675880304229213,
+          "saco_auc": 0.4515114966786932
+        },
+        {
+          "layer_idx": 2,
+          "sensitivity_n_score": 0.06666437991301064,
+          "saco_auc": 0.43428800098318604
+        },
+        {
+          "layer_idx": 3,
+          "sensitivity_n_score": 0.10962792473781155,
+          "saco_auc": 0.4651737422477454
+        },
+        {
+          "layer_idx": 4,
+          "sensitivity_n_score": 0.0932120119656538,
+          "saco_auc": 0.4518683865000494
+        },
+        {
+          "layer_idx": 5,
+          "sensitivity_n_score": 0.08381528878834797,
+          "saco_auc": 0.4475948470097501
+        },
+        {
+          "layer_idx": 6,
+          "sensitivity_n_score": 0.08381281676120125,
+          "saco_auc": 0.47516172611142976
+        },
+        {
+          "layer_idx": 7,
+          "sensitivity_n_score": 0.12945304629107704,
+          "saco_auc": 0.476483159158146
+        },
+        {
+          "layer_idx": 8,
+          "sensitivity_n_score": 0.05034193598000274,
+          "saco_auc": 0.41483214118005707
+        },
+        {
+          "layer_idx": 9,
+          "sensitivity_n_score": 0.032573097864195,
+          "saco_auc": 0.4045320725874044
+        },
+        {
+          "layer_idx": 10,
+          "sensitivity_n_score": 0.035279362297500484,
+          "saco_auc": 0.3632155519055668
+        },
+        {
+          "layer_idx": 11,
+          "sensitivity_n_score": 0.03627065443492029,
+          "saco_auc": 0.4122807897250168
+        }
+      ]
+    },
+    {
+      "alpha": 0.5,
+      "grounding": [
+        {
+          "layer_idx": 0,
+          "pointing_game_accuracy": 0.294,
+          "mean_iou": 0.004875981345960717
+        },
+        {
+          "layer_idx": 1,
+          "pointing_game_accuracy": 0.278,
+          "mean_iou": 0.004324407895956696
+        },
+        {
+          "layer_idx": 2,
+          "pointing_game_accuracy": 0.294,
+          "mean_iou": 0.0043739670591412755
+        },
+        {
+          "layer_idx": 3,
+          "pointing_game_accuracy": 0.29,
+          "mean_iou": 0.005653860064822136
+        },
+        {
+          "layer_idx": 4,
+          "pointing_game_accuracy": 0.294,
+          "mean_iou": 0.005339779881449883
+        },
+        {
+          "layer_idx": 5,
+          "pointing_game_accuracy": 0.288,
+          "mean_iou": 0.004835427203053209
+        },
+        {
+          "layer_idx": 6,
+          "pointing_game_accuracy": 0.282,
+          "mean_iou": 0.004915304081696353
+        },
+        {
+          "layer_idx": 7,
+          "pointing_game_accuracy": 0.304,
+          "mean_iou": 0.006497581910822335
+        },
+        {
+          "layer_idx": 8,
+          "pointing_game_accuracy": 0.308,
+          "mean_iou": 0.006430275026053563
+        },
+        {
+          "layer_idx": 9,
+          "pointing_game_accuracy": 0.308,
+          "mean_iou": 0.004781699160003418
+        },
+        {
+          "layer_idx": 10,
+          "pointing_game_accuracy": 0.306,
+          "mean_iou": 0.017157070468937424
+        },
+        {
+          "layer_idx": 11,
+          "pointing_game_accuracy": 0.288,
+          "mean_iou": 0.004750644705844101
+        }
+      ],
+      "faithfulness": [
+        {
+          "layer_idx": 0,
+          "sensitivity_n_score": 0.0714639472199051,
+          "saco_auc": 0.4365255666188896
+        },
+        {
+          "layer_idx": 1,
+          "sensitivity_n_score": 0.07546340948432771,
+          "saco_auc": 0.4629096911101369
+        },
+        {
+          "layer_idx": 2,
+          "sensitivity_n_score": 0.06318244673412118,
+          "saco_auc": 0.44632921114424245
+        },
+        {
+          "layer_idx": 3,
+          "sensitivity_n_score": 0.116450678373978,
+          "saco_auc": 0.4828582509723492
+        },
+        {
+          "layer_idx": 4,
+          "sensitivity_n_score": 0.08881516695751634,
+          "saco_auc": 0.46827785960421897
+        },
+        {
+          "layer_idx": 5,
+          "sensitivity_n_score": 0.0848635008862766,
+          "saco_auc": 0.45901588910003194
+        },
+        {
+          "layer_idx": 6,
+          "sensitivity_n_score": 0.0841058710917423,
+          "saco_auc": 0.48311127150733957
+        },
+        {
+          "layer_idx": 7,
+          "sensitivity_n_score": 0.12235606037007528,
+          "saco_auc": 0.4888951917505474
+        },
+        {
+          "layer_idx": 8,
+          "sensitivity_n_score": 0.05988671867241646,
+          "saco_auc": 0.43880627817311324
+        },
+        {
+          "layer_idx": 9,
+          "sensitivity_n_score": 0.040745075660997825,
+          "saco_auc": 0.4313203589906916
+        },
+        {
+          "layer_idx": 10,
+          "sensitivity_n_score": 0.0334423282516218,
+          "saco_auc": 0.3722053679234814
+        },
+        {
+          "layer_idx": 11,
+          "sensitivity_n_score": 0.04228851619198395,
+          "saco_auc": 0.4257143325121142
+        }
+      ]
+    },
+    {
+      "alpha": 0.75,
+      "grounding": [
+        {
+          "layer_idx": 0,
+          "pointing_game_accuracy": 0.29,
+          "mean_iou": 0.004504117430602027
+        },
+        {
+          "layer_idx": 1,
+          "pointing_game_accuracy": 0.28,
+          "mean_iou": 0.004037667770965792
+        },
+        {
+          "layer_idx": 2,
+          "pointing_game_accuracy": 0.286,
+          "mean_iou": 0.004052384673996414
+        },
+        {
+          "layer_idx": 3,
+          "pointing_game_accuracy": 0.28,
+          "mean_iou": 0.0044549364504240605
+        },
+        {
+          "layer_idx": 4,
+          "pointing_game_accuracy": 0.282,
+          "mean_iou": 0.004487451851726558
+        },
+        {
+          "layer_idx": 5,
+          "pointing_game_accuracy": 0.282,
+          "mean_iou": 0.004258275523048822
+        },
+        {
+          "layer_idx": 6,
+          "pointing_game_accuracy": 0.284,
+          "mean_iou": 0.004199134569480449
+        },
+        {
+          "layer_idx": 7,
+          "pointing_game_accuracy": 0.284,
+          "mean_iou": 0.004389015917095583
+        },
+        {
+          "layer_idx": 8,
+          "pointing_game_accuracy": 0.284,
+          "mean_iou": 0.004191910146052942
+        },
+        {
+          "layer_idx": 9,
+          "pointing_game_accuracy": 0.284,
+          "mean_iou": 0.004287706900436529
+        },
+        {
+          "layer_idx": 10,
+          "pointing_game_accuracy": 0.29,
+          "mean_iou": 0.005216753345168905
+        },
+        {
+          "layer_idx": 11,
+          "pointing_game_accuracy": 0.288,
+          "mean_iou": 0.004035695507809672
+        }
+      ],
+      "faithfulness": [
+        {
+          "layer_idx": 0,
+          "sensitivity_n_score": 0.0774819149790419,
+          "saco_auc": 0.4579289471557131
+        },
+        {
+          "layer_idx": 1,
+          "sensitivity_n_score": 0.07782785969931137,
+          "saco_auc": 0.4748335908736335
+        },
+        {
+          "layer_idx": 2,
+          "sensitivity_n_score": 0.05364252113058319,
+          "saco_auc": 0.45584976048686077
+        },
+        {
+          "layer_idx": 3,
+          "sensitivity_n_score": 0.11914147896063514,
+          "saco_auc": 0.5014188232074958
+        },
+        {
+          "layer_idx": 4,
+          "sensitivity_n_score": 0.09239589234097366,
+          "saco_auc": 0.4814867089831969
+        },
+        {
+          "layer_idx": 5,
+          "sensitivity_n_score": 0.08340329803994974,
+          "saco_auc": 0.47014809456677176
+        },
+        {
+          "layer_idx": 6,
+          "sensitivity_n_score": 0.09238861715758685,
+          "saco_auc": 0.49122534500714393
+        },
+        {
+          "layer_idx": 7,
+          "sensitivity_n_score": 0.1236803306498914,
+          "saco_auc": 0.500755780588137
+        },
+        {
+          "layer_idx": 8,
+          "sensitivity_n_score": 0.0828360055367084,
+          "saco_auc": 0.465342656894587
+        },
+        {
+          "layer_idx": 9,
+          "sensitivity_n_score": 0.049962810754841484,
+          "saco_auc": 0.45587171844113616
+        },
+        {
+          "layer_idx": 10,
+          "sensitivity_n_score": 0.032890201064627034,
+          "saco_auc": 0.3930242824339075
+        },
+        {
+          "layer_idx": 11,
+          "sensitivity_n_score": 0.045410488116016494,
+          "saco_auc": 0.44002570635732263
+        }
+      ]
+    }
+  ],
+  "config_snapshot": {
+    "model_name": "Salesforce/blip-itm-base-coco",
+    "device": "cuda",
+    "target_layers": [],
+    "dataset_name": "nlphuji/flickr30k",
+    "dataset_split": "test",
+    "max_samples": 500,
+    "batch_size": 8,
+    "annotations_dir": "/scratch/comp-646-g9/data/Annotations",
+    "sentences_dir": "/scratch/comp-646-g9/data/Sentences",
+    "split_file": "/home/aj162/vlm-audit/data/test.txt",
+    "attention_head_fusion": "mean",
+    "gradcam_relu": true,
+    "hybrid_alphas": [
+      0.25,
+      0.5,
+      0.75
+    ],
+    "iou_threshold": 0.5,
+    "sensitivity_n": 10,
+    "saco_steps": 20,
+    "output_dir": "results",
+    "save_heatmaps": true,
+    "hybrid_only": true
+  }
+}

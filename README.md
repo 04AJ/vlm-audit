@@ -8,33 +8,7 @@ Modern VLMs (e.g. BLIP) use cross-attention to align image regions with text tok
 
 ## Pipeline
 
-```
-Input (Image + Caption)
-        │
-        ▼
-┌───────────────┐
-│  Core Module  │  Loads the VLM, registers hooks on cross-attention layers
-└───────┬───────┘
-        │  attention cache  Dict[layer → Tensor]
-        ▼
-┌──────────────────────────────────────────────┐
-│              Extraction Layer                │
-│                                              │
-│  AttentionExtractor  →  attention heatmaps   │
-│  GradCAMExtractor    →  grad-cam heatmaps    │
-│  HybridExtractor     →  alpha·attn +         │
-│                         (1−alpha)·gradcam    │
-└────────┬─────────────────────────────────────┘
-         │  heatmaps  Dict[layer → Tensor (B, H, W)]
-         ▼
-┌──────────────────┐
-│ Evaluation Suite │  Scores heatmaps against Flickr30k bounding-box annotations
-└────────┬─────────┘
-         │
-         ▼
-Output: reliability scorecard (IoU, Pointing Game, Sensitivity-n, SaCo)
-        — evaluated separately for Attention, Grad-CAM, and each Hybrid alpha
-```
+![Pipeline](results/pipeline/pipeline.png)
 
 ## Repository Structure
 
